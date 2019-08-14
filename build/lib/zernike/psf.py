@@ -346,6 +346,8 @@ class Catalog():
     zernpoly = ZernikePoly()
 
     def filter_cat_xy(self,cat_list,img_shape,sub_dim,**kwargs):
+        # print(img_shape)
+        # print(img_shape[0])
 
         x_min       = (sub_dim+1)/2
         x_max       = img_shape[1]-x_min
