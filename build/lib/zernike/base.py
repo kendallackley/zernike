@@ -185,8 +185,8 @@ class FileIO():
         except KeyError:
             sciext = 0
             templext = 0
-        sci_ext = '[{}]'.format(sciext)
-        ref_ext = '[{}]'.format(templext)
+        sci_ext = '{}'.format(sciext)
+        ref_ext = '{}'.format(templext)
         print(inimage+sci_ext)
         print(refimage+ref_ext)
         return iraf.wregister(input=inimage+sci_ext, output=outimage, wcs="world",
