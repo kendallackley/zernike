@@ -12,7 +12,7 @@ __all__ = ["zernike"]
 
 class ZernikePoly():
 
-    def noll2mn(j):
+    def noll2mn(self,j):
         """
         converts the Noll index j to the index pair (m,n10)
         """
@@ -34,7 +34,7 @@ class ZernikePoly():
                 m=k
         return m, n
 
-    def pre_fac(k,m,n):
+    def pre_fac(self,k,m,n):
         """
         returns the prefactor for the relative weighting of the rho
         terms in R_mn
@@ -42,22 +42,29 @@ class ZernikePoly():
         return -2*(k%2-0.5)*fac(n-k)/(fac(k)*fac((n+m)/2-k)*fac((n-m)/2-k))
 
 
-    def R_mn(m,n,rho):
+    def R_mn(self,m,n,rho):
         """
         returns the radial part of Z_mn on the grid rho
         """
-        return sum(pre_fac(k,m,n)*rho**(n-2*k) for k in xrange(((n-m)/2)+1))
+        return sum(self.pre_fac(k,m,n)*rho**(n-2*k) for k in range(int(((n-m)/2)+1)))
 
-    def Z_mn(m,n,rho,phi):
+    def Z_mn(self,m,n,rho,phi):
         """
         returns the full Z_mn on the coordinate grid rho,phi
         """
         if (m >= 0):
-            return R_mn(m,n,rho)*np.cos(m*phi)
+            return self.R_mn(m,n,rho)*np.cos(m*phi)
         elif (m < 0):
-            return R_mn(-m,n,rho)*np.sin(-m*phi)
+            return self.R_mn(-m,n,rho)*np.sin(-m*phi)
 
-    def create_coord_grid(dim,r_disc,dx,dy):
+    def avg_subarr(self,arr,n_ds):
+        h,w         = arr.shape
+        h           = (h//n_ds)*n_ds
+        w           = (w//n_ds)*n_ds
+        arr         = arr[:h,:w]
+        return np.einsum('ijkl->ik',arr.reshape(h//n_ds,n_ds,-1,n_ds))/n_ds**2
+
+    def create_coord_grid(self,dim,r_disc,dx,dy):
         """
         returns the masked coordinate grid rho,phi
         """
@@ -70,7 +77,7 @@ class ZernikePoly():
         grid_mask   = (grid_rho <= 1)*1.0
         return grid_rho,grid_phi,grid_mask
 
-    def create_coord_fgrid(dim,r,dx,dy,n_us):
+    def create_coord_fgrid(self,dim,r,dx,dy,n_us):
         """
         returns the masked and upsampled coordinate grid rho,phi
         """
@@ -82,35 +89,35 @@ class ZernikePoly():
         fgrid_rho   = (fgrid**2).sum(0)**0.5
         fgrid_phi   = np.arctan2(fgrid[0],fgrid[1])
         fgrid_mask  = (fgrid_rho <= 1)*1.0
-        fgrid_mask_ds   = avg_subarr(fgrid_mask,n_us)
+        fgrid_mask_ds   = self.avg_subarr(fgrid_mask,n_us)
         return fgrid_rho,fgrid_phi,fgrid_mask,fgrid_mask_ds
 
-    def create_zern_list(z_ord,dim,r_disc,dx,dy):
+    def create_zern_list(self,z_ord,dim,r_disc,dx,dy):
         """
         returns the Zernike polynomials over the coordinate grid
         """
 
-        grid_rho,grid_phi,grid_mask = create_coord_grid(dim,r_disc,dx,dy)
-        mn_list = [noll2mn(j) for j in z_ord]
-        return [Z_mn(mn[0],mn[1],grid_rho,grid_phi)*grid_mask for mn in mn_list],grid_mask
+        grid_rho,grid_phi,grid_mask = self.create_coord_grid(dim,r_disc,dx,dy)
+        mn_list = [self.noll2mn(j) for j in z_ord]
+        return [self.Z_mn(mn[0],mn[1],grid_rho,grid_phi)*grid_mask for mn in mn_list],grid_mask
 
-    def create_fzern_list(z_ord,dim,r_disc,dx,dy,n_us):
+    def create_fzern_list(self,z_ord,dim,r_disc,dx,dy,n_us):
         """
         returns the Zernike polynomials over the upsampled coordinate grid
         """
 
-        fgrid_rho,fgrid_phi,fgrid_mask,fgrid_mask_ds = create_coord_fgrid(dim,r_disc,dx,dy,n_us)
-        mn_list = [noll2mn(j) for j in z_ord]
-        return [avg_subarr(Z_mn(mn[0],mn[1],fgrid_rho,fgrid_phi)*fgrid_mask,n_us) for mn in mn_list],fgrid_mask_ds
+        fgrid_rho,fgrid_phi,fgrid_mask,fgrid_mask_ds = self.create_coord_fgrid(dim,r_disc,dx,dy,n_us)
+        mn_list = [self.noll2mn(j) for j in z_ord]
+        return [self.avg_subarr(self.Z_mn(mn[0],mn[1],fgrid_rho,fgrid_phi)*fgrid_mask,n_us) for mn in mn_list],fgrid_mask_ds
 
-    def inv_cov_mat(zern_list):
+    def inv_cov_mat(self,zern_list):
         """
         computes the inverse covariance matrix
         """
         cov_mat = np.array([[np.sum(zerni*zernj) for zerni in zern_list] for zernj in zern_list])
         return np.linalg.pinv(cov_mat)
 
-    def zern_fit(wf_img,zern_list,cov_mat_inv):
+    def zern_fit(self,wf_img,zern_list,cov_mat_inv):
         """
         Calculates the inner product of each Zernike mode with the test surface
         and given the inner product vector of the test wavefront with Zernike
@@ -120,33 +127,26 @@ class ZernikePoly():
         wf_rec_pow      = np.dot(cov_mat_inv,wf_zern_inprod)
         return wf_rec_pow
 
-    def wf_comp_brief(z_vec,zern_list):
+    def wf_comp_brief(self,z_vec,zern_list):
         wf_temp = sum(val*zern_list[i] for (i, val) in enumerate(z_vec))
         return wf_temp/wf_temp.sum()
 
-    def wf_comp(z_vec,dim):
-        zern_list,mask   = create_zern_list(len(z_vec),dim)
-        return wf_comp_brief(z_vec,zern_list)
+    def wf_comp(self,z_vec,dim):
+        zern_list,mask   = self.create_zern_list(len(z_vec),dim)
+        return self.wf_comp_brief(z_vec,zern_list)
 
-    def calc_wf_error(wf_img,wf_rec,mask):
+    def calc_wf_error(self,wf_img,wf_rec,mask):
         n_pix   = np.sum(mask)
         return np.sqrt(np.sum(mask*(wf_img-wf_rec)**2)/n_pix)
 
-    def calc_wf_var(wf_img,wf_rec,wf_grid):
+    def calc_wf_var(self,wf_img,wf_rec,wf_grid):
         import numpy as np
 
         n_pix   = np.sum(wf_grid)
         return np.sum((wf_img - wf_rec)**2)/n_pix
 
-    def calc_chi2(subim,wf,mask):
-        return sum(((subim[i,j]-wf[i,j])**2/wf[i,j]) if mask[i,j] else 0 for i in xrange(len(subim[0])) for j in xrange(len(subim)))
-
-    def avg_subarr(arr,n_ds):
-        h,w         = arr.shape
-        h           = (h//n_ds)*n_ds
-        w           = (w//n_ds)*n_ds
-        arr         = arr[:h,:w]
-        return np.einsum('ijkl->ik',arr.reshape(h//n_ds,n_ds,-1,n_ds))/n_ds**2
+    def calc_chi2(self,subim,wf,mask):
+        return sum(((subim[i,j]-wf[i,j])**2/wf[i,j]) if mask[i,j] else 0 for i in range(len(subim[0])) for j in range(len(subim)))
 
 class PSF():
     """
@@ -166,10 +166,9 @@ class PSF():
         :param sub_dim:
             The total size of the cutout grid in pixels
         """
-
         return np.array(img[int(y_int-(sub_dim-1)/2):int(y_int+(sub_dim+1)/2),int(x_int-(sub_dim-1)/2):int(x_int+(sub_dim+1)/2)], copy=True)
 
-    def remove_background(img):
+    def remove_background(self,img):
         """
         Calulates the median as a proxy for the background and subtracts from image.
 
@@ -179,7 +178,7 @@ class PSF():
 
         return img-np.median(img)
 
-    def shift_image(img,dx,dy,interp_order):
+    def shift_image(self,img,dx,dy,interp_order):
         """
         Shifts the image by a fractional pixel amount
 
@@ -196,7 +195,7 @@ class PSF():
 
         return ndimage.interpolation.shift(img, [-dy,-dx], order=interp_order)
 
-    def shift_image_lanczos3(img,dx,dy):
+    def shift_image_lanczos3(self,img,dx,dy):
         """
         Shifts the image by a fractional pixel amount using Lanczos 3rd
         order resampling
@@ -212,12 +211,12 @@ class PSF():
         temp_dim    = img.shape[0]+6
         img_temp    = np.zeros((temp_dim,temp_dim))
         img_temp[3:img.shape[0]+3,3:img.shape[0]+3]=img
-        l_krnl      = np.array([[lanczos3_2d(dx-k,dy-l) for k in range(-2,4)] for l in range(-2,4)])
+        l_krnl      = np.array([[self.lanczos3_2d(dx-k,dy-l) for k in range(-2,4)] for l in range(-2,4)])
         l_krnl      = l_krnl/np.sum(l_krnl)
         img_new     = np.array([[np.sum(img_temp[3+j-2:3+j+4,3+i-2:3+i+4]*l_krnl) for i in range(img.shape[1])] for j in range(img.shape[0])])
         return img_new
 
-    def calc_wavefront(sub_img,disk_mask):
+    def calc_wavefront(self,sub_img,disk_mask):
         """
         Returns the normalized and masked image on the unit circle
 
@@ -229,10 +228,12 @@ class PSF():
 
         sub_dim     = sub_img.shape[0]
         disk_dim    = disk_mask.shape[0]
-        disk_img    = sub_img[int((sub_dim-1)/2-(disk_dim-1)/2):int((sub_dim-1)/2+(disk_dim+1)/2),int((sub_dim-1)/2-(disk_dim-1)/2):int((sub_dim-1)/2+(disk_dim+1)/2)]*disk_mask
+        min_dim = int((sub_dim-1)/2-(disk_dim-1)/2)
+        max_dim = int((sub_dim-1)/2+(disk_dim+1)/2)
+        disk_img    = sub_img[min_dim:max_dim,min_dim:max_dim]*disk_mask
         return disk_img/disk_img.sum()
 
-    def img2wf(img,x,y,sub_dim,disk_mask):
+    def img2wf(self,img,x,y,sub_dim,disk_mask):
 
         """
         Returns the normalized and masked image on the unit circle
@@ -251,10 +252,11 @@ class PSF():
 
         x_int       = int(round(x))
         y_int       = int(round(y))
-        sub_img     = remove_background(sub_image(img,x_int,y_int,sub_dim))
-        return calc_wavefront(sub_img,disk_mask)
+        # print('SUB_DIM',sub_dim,x_int,y_int,y)
+        sub_img     = self.remove_background(self.sub_image(img,x_int,y_int,sub_dim))
+        return self.calc_wavefront(sub_img,disk_mask)
 
-    def img2wf_shift(img,x_int,y_int,dx,dy,sub_dim,disk_mask):
+    def img2wf_shift(self,img,x_int,y_int,dx,dy,sub_dim,disk_mask):
 
         """
         Returns the shifted, normalized and masked image on the unit circle
@@ -275,11 +277,11 @@ class PSF():
             The size of the disk_mask in pixel units
         """
 
-        sub_img         = remove_background(sub_image(img,x_int,y_int,sub_dim))
-        sub_img_shift   = shift_image(sub_img,dx,dy,5)
-        return calc_wavefront(sub_img_shift,disk_mask)
+        sub_img         = self.remove_background(self.sub_image(img,x_int,y_int,sub_dim))
+        sub_img_shift   = self.shift_image(sub_img,dx,dy,5)
+        return self.calc_wavefront(sub_img_shift,disk_mask)
 
-    def img2wf_lanczos3(img,x,y,sub_dim,disk_mask):
+    def img2wf_lanczos3(self,img,x,y,sub_dim,disk_mask,**kwargs):
         """
         Returns the  normalized and masked image on the unit circle using
         Lanczos 3rd order resampling
@@ -296,33 +298,43 @@ class PSF():
             The size of the disk_mask in pixel units
         """
 
-        x_int = Column(data=cat[cat_xkey], dtype=int)
-        y_int = Column(data=cat[cat_ykey], dtype=int)
-        dx          = cat[cat_xkey]-x_int
-        dy          = cat[cat_xkey]-y_int
-        sub_img     = remove_background(sub_image(img,x_int,y_int,sub_dim))
+        x_int = int(x)
+        y_int = int(y)
+        dx          = x-x_int
+        dy          = x-y_int
+        sub_img     = self.remove_background(self.sub_image(img,x_int,y_int,sub_dim))
         disk_dim    = disk_mask.shape
         disk_img    = np.zeros(disk_dim)
         pix_off     = (sub_dim-disk_dim[0])/2
 
-        l_krnl      = np.array([[lanczos3_2d(dx-k,dy-l) for k in range(-2,4)] for l in range(-2,4)])
+        l_krnl      = np.array([[self.lanczos3_2d(dx-k,dy-l) for k in range(-2,4)] for l in range(-2,4)])
 
         l_krnl      = l_krnl/np.sum(l_krnl)
-        disk_img    = np.array([[np.sum(sub_img[int(pix_off+j-2):int(pix_off+j+4),int(pix_off+i-2):int(pix_off+i+4)]*l_krnl) for i in range(disk_mask.shape[1])] for j in range(disk_mask.shape[0])])
+        try:
+            disk_img    = np.array([[np.sum(sub_img[int(pix_off+j-2):int(pix_off+j+4), \
+                                    int(pix_off+i-2):int(pix_off+i+4)]*l_krnl) \
+                                    for i in range(disk_mask.shape[1])] \
+                                    for j in range(disk_mask.shape[0])])
+            disk_img    = disk_img*disk_mask
+            if np.sum(disk_img) != 0.0:
+                return disk_img/np.sum(disk_img)
+            else:
+                return 'ERROR'
+        except ValueError:
+            return 'ERROR'
     #    for i in xrange(disk_dim[1]):
     #        for j in xrange(disk_dim[0]):
     #            for k in xrange(-2,4):
     #                for l in xrange(-2,4):
     #                    disk_img[j,i] += sub_img[pix_off+j+l,pix_off+i+k]*lanczos3_2d(dx-k,dy-l)
-        disk_img    = disk_img*disk_mask
-        return disk_img/np.sum(disk_img)
 
-    def lanczos3_2d(x,y):
+
+    def lanczos3_2d(self,x,y):
         import numpy as np
 
         return np.sinc(x)*np.sinc(x/3)*np.sinc(y)*np.sinc(y/3)
 
-    def calc_wf_err(wf_img,wf_rec,disk_mask):
+    def calc_wf_err(self,wf_img,wf_rec,disk_mask):
         import numpy as np
 
         n_pix   = np.sum(disk_mask)
@@ -330,75 +342,96 @@ class PSF():
 
 class Catalog():
 
-    def filter_cat_xy(cat_table,img_shape,sub_dim):
+    psf = PSF()
+    zernpoly = ZernikePoly()
+
+    def filter_cat_xy(self,cat_list,img_shape,sub_dim,**kwargs):
 
         x_min       = (sub_dim+1)/2
         x_max       = img_shape[1]-x_min
-        y_min       = (sub_dim+1)
+        y_min       = (sub_dim+1)/2
         y_max       = img_shape[0]-y_min
         print('X AND Y: ',x_min,x_max,y_min,y_max)
-        filter_list = []
-        for cat_item in cat_table:
-            if (x_min < cat_item.x < x_max and y_min < cat_item.y < y_max):
-                filter_list.append(cat_item)
-        return(filter_list)
 
-    def filter_cat_flux(cat_list,flux_min,flux_max):
-        return([cat_item for cat_item in cat_list if (flux_min < cat_item.flux <= flux_max)])
+        try:
+            x_key = kwargs['x_key']
+            y_key = kwargs['y_key']
+        except:
+            x_key = 'XWIN_IMAGE'
+            y_key = 'YWIN_IMAGE'
+        # return(cat_list[[x_min < cat_list[x_key]] and [cat_list[x_key] < x_max] \
+        #         and [y_min < cat_list[y_key]] and [cat_list[y_key] < y_max]])
+
+        return cat_list[(cat_list[x_key] < x_max) & (cat_list[x_key] > x_min) & \
+                        (cat_list[y_key] < y_max) & (cat_list[y_key] > y_min)]
 
 
-    def filter_cat_mag(cat_list,mag_min,mag_max):
-        return([cat_item for cat_item in cat_list if (mag_min < cat_item.mag <= mag_max)])
 
+    def filter_cat_flux(self,cat_list,flux_min,flux_max,**kwargs):
+        try:
+            flux_key = kwargs['flux_key']
+        except:
+            flux_key = 'FLUX_AUTO'
+        print(flux_min,flux_max)
 
-    def filter_cat_cls(cat_list,cls_min,cls_max):
-        return([cat_item for cat_item in cat_list if (cls_min < cat_item.cls <= cls_max)])
+        return cat_list[(cat_list[flux_key] <= flux_max) & (cat_list[flux_key] > flux_min)]
 
-    def filter_cat_flag(cat_list,flag_val):
-        return([cat_item for cat_item in cat_list if (cat_item.flag == flag_val)])
+    def filter_cat_mag(self,cat_list,mag_min,mag_max, **kwargs):
+        try:
+            mag_key = kwargs['mag_key']
+        except:
+            mag_key = 'MAG_AUTO'
+        return cat_list[(cat_list[mag_key] <= mag_max) & (cat_list[mag_key] > mag_min)]
+        # return(cat_list[[mag_min < cat_list[mag_key]] and [cat_list[mag_key] <= mag_max]])
 
-    def filter_cat_radec(cat_list,ra,dec):
-        return([cat_item for cat_item in cat_list if (cat_item.ra != ra and cat_item.dec != dec)])
+    def filter_cat_cls(self,cat_list,cls_min,cls_max, **kwargs):
+        return cat_list[(cat_list['CLASS_STAR'] <= cls_max) & (cat_list['CLASS_STAR'] > cls_min)]
+        # return(cat_list[[cat_list['CLASS_STAR'] <= cls_max] and [cat_list['CLASS_STAR'] > cls_min ]])
+
+    def filter_cat_flag(self,cat_list,flag_val):
+        return(cat_list[cat_list['FLAGS'] == flag_val])
+
+    def filter_cat_radec(self,cat_list,ra,dec):
+        return(cat_list[[cat_list['ALPHA_J2000'] != ra] and [cat_list['DELTA_J2000'] != dec]])
 
     ### Zernike calculations
 
-    def cat2zern(cat_list,img_data,surr_dim,disc_dim,chi2_thr,zern_list,grid_mask,cov_mat_inv):
-        import ppln_zernike
+    def cat2zern(self,cat_list,img_data,surr_dim,disc_dim,chi2_thr,zern_list,grid_mask,cov_mat_inv):
 
         zc_list = []
         for cat_item in cat_list:
-            wf_img      = img2wf(img_data,cat_item.x,cat_item.y,surr_dim,disc_dim)
-            zc_item     = ppln_zernike.zern_fit(wf_img,zern_list,cov_mat_inv)
-            wf_rec      = ppln_zernike.wf_comp_brief(zc_item,zern_list,grid_mask)
-            if ppln_zernike.calc_chi2(wf_img,wf_rec,grid_mask)<chi2_thr:
+            wf_img      = psf.img2wf(img_data,cat_item.x,cat_item.y,surr_dim,disc_dim)
+            zc_item     = zernpoly.zern_fit(wf_img,zern_list,cov_mat_inv)
+            wf_rec      = zernpoly.wf_comp_brief(zc_item,zern_list,grid_mask)
+            if zernpoly.calc_chi2(wf_img,wf_rec,grid_mask)<chi2_thr:
                 zc_list.append(zc_item)
         return(zc_list)
 
-    def cat2zern_wf_shift(cat_list,img_data,surr_dim,disc_dim,chi2_thr,zern_list,grid_mask,cov_mat_inv):
-        import ppln_zernike
+    def cat2zern_wf_shift(self,cat_list,img_data,surr_dim,disc_dim,chi2_thr,zern_list,grid_mask,cov_mat_inv):
+
 
         zc_list     =   []
         for i, cat_item in enumerate(cat_list):
             dx          = int(round(cat_item.x))-cat_item.x
             dy          = int(round(cat_item.y))-cat_item.y
-            wf_img      = img2wf_shift(img_data,cat_item.x,cat_item.y,dx,dy,surr_dim,disc_dim)
-            zc_item     = ppln_zernike.zern_fit(wf_img,zern_list,cov_mat_inv)
-            wf_rec      = ppln_zernike.wf_comp_brief(zc_item,zern_list,grid_mask)
-            if ppln_zernike.calc_chi2(wf_img,wf_rec,grid_mask)<chi2_thr:
+            wf_img      = psf.img2wf_shift(img_data,cat_item.x,cat_item.y,dx,dy,surr_dim,disc_dim)
+            zc_item     = zernpoly.zern_fit(wf_img,zern_list,cov_mat_inv)
+            wf_rec      = zernpoly.wf_comp_brief(zc_item,zern_list,grid_mask)
+            if zernpoly.calc_chi2(wf_img,wf_rec,grid_mask)<chi2_thr:
                 zc_list.append(zc_item)
         return(zc_list)
 
     ### Gauss fitting
 
-    def calc_zdist_gauss(zz,ref_zz):
+    def calc_zdist_gauss(self,zz,ref_zz):
         import numpy as np
-        return np.sqrt(np.sum([((zz[i]-ref_zz.z_gauss[i])/ref_zz.z_gauss_std[i])**2 for i in range(len(zz))]))
+        return np.sqrt(np.sum([((zz[i]-ref_zz['GAUSS'][i])/ref_zz['GAUSS_STD'][i])**2 for i in range(len(zz))]))
 
-    def calc_zdist_med_std(zz,ref_zz):
+    def calc_zdist_med_std(self,zz,ref_zz):
         import numpy as np
-        return np.sqrt(np.sum([((zz[i]-ref_zz.z_med[i])/ref_zz.z_mean_std[i])**2 for i in range(len(zz))]))
+        return np.sqrt(np.sum([((zz[i]-ref_zz['MED'][i])/ref_zz['MEAN_STD'][i])**2 for i in range(len(zz))]))
 
-    def gfit_zerndist(zc_lst,n_bins):
+    def gfit_zerndist(self,zc_lst,n_bins):
         import numpy as np
 
         z_med   = np.median(zc_lst,axis=0)
@@ -413,7 +446,7 @@ class Catalog():
             hist, bin_edges = np.histogram(zc_lst[:,zern_ord],bins=n_bins,range=(np.min(zc_lst[:,zern_ord]),np.max(zc_lst[:,zern_ord])))
             bin_centers     = (bin_edges[:-1] + bin_edges[1:])/2
             p_init          = [np.amax(hist), z_init, .01]
-            [amp,gpk,gsd]   = gauss_fit(hist,bin_centers,p_init)
+            [amp,gpk,gsd]   = self.gauss_fit(hist,bin_centers,p_init)
     	#print amp
             gsd             = np.abs(gsd)
             g_dist          = amp*np.exp((-(bin_centers-gpk)**2)/(2*gsd**2))
@@ -428,17 +461,18 @@ class Catalog():
             cents.append(bin_centers)
         return(z_gpk,z_gsd,z_chi2,hists,cents)
 
-    def cat_comp_radec(cat1_list,cat2_list):
+    def cat_comp_radec(self,cat1_list,cat2_list):
         import numpy as np
 
         cat1_cand   = []
         for cat2_item in cat2_list:
             for cat1_item in cat1_list:
-                if np.abs(cat1_item.ra-cat2_item.ra)<0.0005 and np.abs(cat1_item.dec-cat2_item.dec)<0.0005:
+                if np.abs(cat1_item['ALPHA_J2000']-cat2_item['ALPHA_J2000'])<0.0005 \
+                        and np.abs(cat1_item['DELTA_J2000']-cat2_item['DELTA_J2000']) < 0.0005:
                     cat1_cand.append(cat1_item)
         return(cat1_cand)
 
-    def cat_comp_xy(cat1_list,cat2_list):
+    def cat_comp_xy(self,cat1_list,cat2_list):
         import numpy as np
 
         cat1_cand   = []
@@ -448,53 +482,12 @@ class Catalog():
                     cat1_cand.append(cat1_item)
         return(cat1_cand)
 
-    def gauss(x, *p):
+    def gauss(self,x, *p):
         import numpy as np
         A, mu, sigma = p
         return A*np.exp(-(x-mu)**2/(2.*sigma**2))
 
-    def gauss_fit(hist,bin_centers,p0):
+    def gauss_fit(self,hist,bin_centers,p0):
         from scipy.optimize import curve_fit
-        coeff, var_matrix = curve_fit(gauss, bin_centers, hist, p0=p0)
+        coeff, var_matrix = curve_fit(self.gauss, bin_centers, hist, p0=p0)
         return coeff
-
-    def deg2HMS(rain):
-
-       if rain < 0:
-          s = -1
-          ra = -rain
-       else:
-          s = 1
-          ra = rain
-
-       h = int(ra/15)
-       ra -= h*15.
-       m = int(ra*4)
-       ra -= m/4.
-       s = ra*240.
-
-       if s == -1:
-          return '-%02d:%02d:%06.3f'%(h,m,s)
-       else:
-           return '+%02d:%02d:%06.3f'%(h,m,s)
-
-    def deg2DMS(decin):
-
-       if(Decin<0):
-          s = -1
-          dec = -decin
-       else:
-          s = 1
-          dec = decin
-
-       d = int(dec)
-       dec -= d
-       dec *= 100.
-       m = int(dec*0.6)
-       dec -= m*5./3.
-       s = dec*180./5.
-
-       if s == -1:
-          return '-%02d:%02d:%06.3f'%(d,m,s)
-       else:
-           return '+%02d:%02d:%06.3f'%(d,m,s)

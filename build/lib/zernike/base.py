@@ -1,5 +1,6 @@
 import numpy as np
 from astropy.table import Table
+import subprocess
 
 __all__ = ["zernike"]
 
@@ -39,6 +40,7 @@ class TransObj():
         self.mag_app_err = mag_app_err
         self.seeing = seeing
 
+
 class FileIO():
 
     def read_params_file(self, params_file, **kwargs):
@@ -58,10 +60,18 @@ class FileIO():
         """
         Read in an ascii file
         """
+        try:
+            x_key = kwargs['x_key']
+            y_key = kwargs['y_key']
+        except:
+            x_key = 'XWIN_IMAGE'
+            y_key = 'YWIN_IMAGE'
+        cat = ascii.read(filename)
+        cat[x_key] -= 1
+        cat[y_key] -= 1
+        return cat
 
-        return ascii.read(filename)
-
-    def read_zern_file(filename, **kwargs):
+    def read_zern_file(self,filename, **kwargs):
         from astropy.io import ascii
 
         """
@@ -77,27 +87,126 @@ class FileIO():
         """
         Write an ascii file
         """
-
         return ascii.SExtractor.write(filename)
 
-    def sextractor_script(infile,catfile):
-        args = ['sex '+infile+' -c '+sex_param+' -CATALOG_NAME '+catfile]
+    def sextractor_script(self, infile, catfile, sex_param, align=False, **kwargs):
+        """
+        """
+        import subprocess
+        import shutil
+
+        sargs = []
+        for kw in kwargs:
+            sargs.append(" -{} {} ".format(kw,kwargs[kw]))
+
+        cmd = shutil.which('sextractor')
+        if cmd is not None:
+            pass
+        elif cmd is None:
+            cmd = shutil.which('sex')
+            if cmd is not None:
+                pass
+            else:
+                warnings.warn("No SExtractor installed")
+
+        if align:
+            sargs.append(" -{} {} ".format('CATALOG_TYPE','FITS_LDAC'))
+            sargs.append(" -{} {} ".format('c',sex_param))
+            sargs.append(" -{} {} ".format('CATALOG_NAME',infile.replace('.fits','.ldac.fits')))
+
+        else:
+            sargs.append(" -{} {} ".format('CATALOG_TYPE','ASCII_HEAD'))
+            sargs.append(" -{} {} ".format('c',sex_param))
+            sargs.append(" -{} {} ".format('CATALOG_NAME',catfile))
+
+        args = [cmd+' '+infile+' '.join(sargs)]
         subprocess.call(args,shell=True)
         return
 
-    def remap(infile,catfile):
-        args = ['swarp '+infile+' -c '+swarp_param+' -CATALOG_NAME '+catfile]
+    # def sextractor_script(self,infile,catfile,sex_param,align=False,**kwargs):
+    #     """
+    #     """
+    #     import astromatic_wrapper as aw
+    #     import shutil
+    #
+    #     sargs = []
+    #     for kw in kwargs:
+    #         sargs.append(" -{} {} ".format(kw,kwargs[kw]))
+    #
+    #     files = {'image': infile}
+    #
+    #     cmd = shutil.which('sextractor')
+    #     if cmd is not None:
+    #         kwargs['cmd'] = cmd
+    #     elif cmd is None
+    #         cmd = shutil.which('sex')
+    #         if cmd is not None:
+    #             kwargs['cmd'] = cmd
+    #         else:
+    #             warnings.warn("No SExtractor installed")
+    #
+    #     if align:
+    #         kwargs['config']['CATALOG_TYPE'] = 'FITS_LDAC'
+    #         kwargs['config_file'] = sex_swarp_param
+    #         sextractor = aw.api.Astromatic(**kwargs)
+    #         sextractor.run_frames(files['image'],frames=[1])
+    #
+    #     else:
+    #         kwargs['config']['CATALOG_TYPE'] = 'ASCII_HEAD'
+    #         kwargs['config_file'] = sex_param
+    #
+    #
+    #
+    #
+    #     # args = ['sex '+infile+' -c '+sex_param+' -CATALOG_NAME '+catfile+
+    #     #         ' '.join(sargs)]
+    #     # subprocess.call(args,shell=True)
+    #     return
+
+    def remap_swarp(self,inimage,refimage,output,**kwargs):
+        swarp_kwargs = []
+        for kw in kwargs:
+            swarp_args.append(" -{} {} ".format(kw,kwargs[kw]))
+
+        swarp_args.append(" -{} {} ".format('IMAGEOUT_NAME',output))
+        swarp_args.append(" -{} {} ".format('COMBINE','N'))
+        swarp_args.append(" -{} {} ".format('SUBTRACT_BACK','Y'))
+
+
+        args = ['swarp '+inimage+refimage+' -c '+swarp_param+''.join(swarp_args)]
         subprocess.call(args,shell=True)
         return
 
-    def align(inimage,incat,refcat,outimage):
+    def remap_wcs(self,inimage,refimage,outimage,**kwargs):
+        from pyraf import iraf
+        try:
+            sciext = kwargs['sci']
+            templext = kwargs['ref']
+        except KeyError:
+            sciext = 0
+            templext = 0
+        sci_ext = '[{}]'.format(sciext)
+        ref_ext = '[{}]'.format(templext)
+        print(inimage+sci_ext)
+        print(refimage+ref_ext)
+        return iraf.wregister(input=inimage+sci_ext, output=outimage, wcs="world",
+                        reference=refimage+ref_ext, Stdout=1)
+
+    def remap_spalipy(self,incat,refcat,inimage,output,**kwargs):
         from spalipy import spalipy
-        s = spalipy.Spalipy(incat, refcat, inimage,
-            		    output_filename=outimage)
+        try:
+            sciext = kwargs['sci']
+            templext = kwargs['ref']
+        except KeyError:
+            sciext = 0
+            templext = 0
+        sci_ext = '[{}]'.format(sciext)
+        s = spalipy.Spalipy(incat, refcat, inimage,output_filename=output)
         s.main()
+        print(output)
         return
 
-    def run_hotpants(infile,alreffile,subfile,convfile,**kwargs):
+    def run_hotpants(self,infile,alreffile,subfile,convfile,hpargs=None,**kwargs):
         """
         Additional options:
        [-tu tuthresh]    : upper valid data count, template (25000)
@@ -215,14 +324,14 @@ class FileIO():
         #     hpargs.append(" -{} {} ".format('oci', refcfile))
         #     pass
 
-        args = ['hotpants -inim '+infile+' -templim '+alreffile+' -outim '+
-                subfile+' -oci'+convfile+' '.join(hpargs)]
+        args = ['hotpants -inim '+infile+' -tmplim '+alreffile+' -outim '+
+                subfile+' -oci '+convfile+' '.join(hpargs)]
 
         subprocess.call(args,shell=True)
         # VS subprocess.Popen(args).wait() for error handling
         return
 
-    def write_psf_file(psf_file,img_nam,cat_file,
+    def write_psf_file(self,psf_file,img_nam,cat_file,
             wf_s_coeff_mean, wf_s_coeff_med,wf_s_coeff_gauss,flux_min,cls_min,
             j_max,sub_dim, disk_dim,disk_rad,len_wf_s_coeff_list,
             len_inj_cat_filter,wf_s_coeff_gauss_std,wf_s_coeff_gauss_chi2,wf_s_coeff_mean_std,
@@ -244,7 +353,7 @@ class FileIO():
             psfID.write("# 5 \tGAUSS\tCENTER OF GAUSSIAN FIT\n")
             psfID.write("# 6 \tGS_SD\tSTANDARD DEVIATION OF GAUSSIAN FIT\n")
             psfID.write("# 7 \tCHI2\tCHI^2 OF GAUSSIAN FIT\n")
-            for k in xrange(len(wf_s_coeff_mean)):
+            for k in range(len(wf_s_coeff_mean)):
                 psfID.write("%2g" % k)
                 psfID.write("\t%+10.8f" % wf_s_coeff_mean[k])
                 psfID.write("\t%+10.8f" % wf_s_coeff_mean_std[k])
@@ -257,7 +366,8 @@ class FileIO():
             psfID.close()
         return
 
-    def write_trans_file(trans_file,trans_list,len_sub_cat):
+    def write_trans_file(self,trans_file,trans_list,len_sub_cat,dz_max):
+        print('WRITING TRANS FILE TO',trans_file)
         with open(trans_file, 'w') as transID:
             transID.write("# Zernike Distance: \t%5g\n" %dz_max)
             transID.write("# Number of objects in subtracted image: \t%5g\n" %len_sub_cat)
@@ -279,51 +389,94 @@ class FileIO():
             transID.write("# 13 \tFWHM\n")
 
             for i,trans_item in enumerate(trans_list):
+                x,y,snr,zdist,mag_inst,mag_inst_err,ra,dec,flux,flux_err,\
+                                mag_app,mag_app_err,fwhm=trans_item
                 transID.write("%4g" % i)
-                transID.write("\t%6.2f"  % trans_item.z_dist)
-                transID.write("\t%11.6f" % trans_item.x)
-                transID.write("\t%11.6f" % trans_item.y)
-                transID.write("\t%12.6f" % trans_item.ra)
-                transID.write("\t%12.6f" % trans_item.dec)
-                transID.write("\t%6.2f"  % trans_item.snr)
-                transID.write("\t%10.6f" % trans_item.mag_inst)
-                transID.write("\t%10.6f" % trans_item.mag_inst_err)
-                transID.write("\t%10.6f" % trans_item.mag_app)
-                transID.write("\t%10.6f" % trans_item.mag_app_err)
-                transID.write("\t%10.6f" % trans_item.flux)
-                transID.write("\t%10.6f" % trans_item.flux_err)
-                transID.write("\t%6.2f"  % trans_item.fwhm)
+                transID.write("\t%6.2f"  % zdist)
+                transID.write("\t%11.6f" % x)
+                transID.write("\t%11.6f" % y)
+                transID.write("\t%12.6f" % ra)
+                transID.write("\t%12.6f" % dec)
+                transID.write("\t%6.2f"  % snr)
+                transID.write("\t%10.6f" % mag_inst)
+                transID.write("\t%10.6f" % mag_inst_err)
+                transID.write("\t%10.6f" % mag_app)
+                transID.write("\t%10.6f" % mag_app_err)
+                transID.write("\t%10.6f" % flux)
+                transID.write("\t%10.6f" % flux_err)
+                transID.write("\t%6.2f"  % fwhm)
                 transID.write("\n")
         transID.close()
         return
 
+    def deg2HMS(self,rain):
 
-    def write_reg(reg_file,trans_list,filter_trans=0,filter_dz=0):
-        from astropy.coordinate import SkyCoord
+       if rain < 0:
+          s = -1
+          ra = -rain
+       else:
+          s = 1
+          ra = rain
+
+       h = int(ra/15)
+       ra -= h*15.
+       m = int(ra*4)
+       ra -= m/4.
+       s = ra*240.
+
+       if s == -1:
+          return '-%02d:%02d:%06.3f'%(h,m,s)
+       else:
+           return '+%02d:%02d:%06.3f'%(h,m,s)
+
+    def deg2DMS(self,decin):
+
+       if decin < 0:
+          s = -1
+          dec = -decin
+       else:
+          s = 1
+          dec = decin
+
+       d = int(dec)
+       dec -= d
+       dec *= 100.
+       m = int(dec*0.6)
+       dec -= m*5./3.
+       s = dec*180./5.
+
+       if s == -1:
+          return '-%02d:%02d:%06.3f'%(d,m,s)
+       else:
+           return '+%02d:%02d:%06.3f'%(d,m,s)
+
+
+    def write_reg(self,reg_file,trans_list,filter_trans=0,filter_dz=0):
+        from astropy.coordinates import SkyCoord
         from astropy import units as u
 
         with open(reg_file, 'w') as iregID:
             iregID.write("# Region file format: DS9 version 4.1\n")
             iregID.write('global color=red dashlist=8 3 width=1 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=1 move=1 delete=1 include=1 source=1\n')
             iregID.write("fk5\n")
-            if not filter_trans:
-                for i,trans_item in enumerate(trans_list):
-                    ra_hms = deg2HMS(trans_item.ra)
-                    dec_hms = deg2DMS(trans_item.dec)
+            for i, trans_item in enumerate(trans_list):
+                x,y,snr,zdist,mag_inst,mag_inst_err,ra,dec,flux,flux_err,\
+                                mag_app,mag_app_err,fwhm=trans_item
+                if not filter_trans:
+                    ra_hms = self.deg2HMS(ra)
+                    dec_hms = self.deg2DMS(dec)
                     iregID.write('circle(%s,%s,17.8744")' % (ra_hms,dec_hms))
                     iregID.write("\n")
-            else:
-                if not filter_dz:
-                    for i,trans_item in enumerate(trans_list):
-                        ra_hms = deg2HMS(trans_item.ra)
-                        dec_hms = deg2DMS(trans_item.dec)
+                else:
+                    if not filter_dz:
+                        ra_hms = self.deg2HMS(ra)
+                        dec_hms = self.deg2DMS(dec)
                         iregID.write('circle(%s,%s,12.8744")' % (ra_hms,dec_hms))
                         iregID.write("\n")
-                else:
-                    for i,trans_item in enumerate(trans_list):
-                        if trans_item.z_dist <= trans_less:
-                            ra_hms = deg2HMS(trans_item.ra)
-                            dec_hms = deg2DMS(trans_item.dec)
+                    else:
+                        if zdist <= filter_dz:
+                            ra_hms = self.deg2HMS(ra)
+                            dec_hms = self.deg2DMS(dec)
                             iregID.write('circle(%s,%s,12.8744")' % (ra_hms,dec_hms))
                             iregID.write("\n")
         iregID.close()

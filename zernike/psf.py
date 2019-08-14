@@ -166,7 +166,6 @@ class PSF():
         :param sub_dim:
             The total size of the cutout grid in pixels
         """
-
         return np.array(img[int(y_int-(sub_dim-1)/2):int(y_int+(sub_dim+1)/2),int(x_int-(sub_dim-1)/2):int(x_int+(sub_dim+1)/2)], copy=True)
 
     def remove_background(self,img):
@@ -229,7 +228,9 @@ class PSF():
 
         sub_dim     = sub_img.shape[0]
         disk_dim    = disk_mask.shape[0]
-        disk_img    = sub_img[int((sub_dim-1)/2-(disk_dim-1)/2):int((sub_dim-1)/2+(disk_dim+1)/2),int((sub_dim-1)/2-(disk_dim-1)/2):int((sub_dim-1)/2+(disk_dim+1)/2)]*disk_mask
+        min_dim = int((sub_dim-1)/2-(disk_dim-1)/2)
+        max_dim = int((sub_dim-1)/2+(disk_dim+1)/2)
+        disk_img    = sub_img[min_dim:max_dim,min_dim:max_dim]*disk_mask
         return disk_img/disk_img.sum()
 
     def img2wf(self,img,x,y,sub_dim,disk_mask):
@@ -251,6 +252,7 @@ class PSF():
 
         x_int       = int(round(x))
         y_int       = int(round(y))
+        # print('SUB_DIM',sub_dim,x_int,y_int,y)
         sub_img     = self.remove_background(self.sub_image(img,x_int,y_int,sub_dim))
         return self.calc_wavefront(sub_img,disk_mask)
 
@@ -347,7 +349,7 @@ class Catalog():
 
         x_min       = (sub_dim+1)/2
         x_max       = img_shape[1]-x_min
-        y_min       = (sub_dim+1)
+        y_min       = (sub_dim+1)/2
         y_max       = img_shape[0]-y_min
         print('X AND Y: ',x_min,x_max,y_min,y_max)
 
@@ -357,27 +359,34 @@ class Catalog():
         except:
             x_key = 'XWIN_IMAGE'
             y_key = 'YWIN_IMAGE'
-        return(cat_list[[x_min < cat_list[x_key]] and [cat_list[x_key] < x_max] \
-                and [y_min < cat_list[y_key]] and [cat_list[y_key] < y_max]])
+        # return(cat_list[[x_min < cat_list[x_key]] and [cat_list[x_key] < x_max] \
+        #         and [y_min < cat_list[y_key]] and [cat_list[y_key] < y_max]])
+
+        return cat_list[(cat_list[x_key] < x_max) & (cat_list[x_key] > x_min) & \
+                        (cat_list[y_key] < y_max) & (cat_list[y_key] > y_min)]
+
+
 
     def filter_cat_flux(self,cat_list,flux_min,flux_max,**kwargs):
         try:
             flux_key = kwargs['flux_key']
         except:
             flux_key = 'FLUX_AUTO'
-        return(cat_list[[flux_min < cat_list[flux_key]] and [cat_list[flux_key] <= flux_max]])
+        print(flux_min,flux_max)
 
+        return cat_list[(cat_list[flux_key] <= flux_max) & (cat_list[flux_key] > flux_min)]
 
     def filter_cat_mag(self,cat_list,mag_min,mag_max, **kwargs):
         try:
             mag_key = kwargs['mag_key']
         except:
             mag_key = 'MAG_AUTO'
-        return(cat_list[[mag_min < cat_list[mag_key]] and [cat_list[mag_key] <= mag_max]])
+        return cat_list[(cat_list[mag_key] <= mag_max) & (cat_list[mag_key] > mag_min)]
+        # return(cat_list[[mag_min < cat_list[mag_key]] and [cat_list[mag_key] <= mag_max]])
 
     def filter_cat_cls(self,cat_list,cls_min,cls_max, **kwargs):
-
-        return(cat_list[[cat_list['CLASS_STAR'] <= cls_max] and [cat_list['CLASS_STAR'] < cls_min ]])
+        return cat_list[(cat_list['CLASS_STAR'] <= cls_max) & (cat_list['CLASS_STAR'] > cls_min)]
+        # return(cat_list[[cat_list['CLASS_STAR'] <= cls_max] and [cat_list['CLASS_STAR'] > cls_min ]])
 
     def filter_cat_flag(self,cat_list,flag_val):
         return(cat_list[cat_list['FLAGS'] == flag_val])

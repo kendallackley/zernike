@@ -60,8 +60,16 @@ class FileIO():
         """
         Read in an ascii file
         """
-
-        return ascii.read(filename)
+        try:
+            x_key = kwargs['x_key']
+            y_key = kwargs['y_key']
+        except:
+            x_key = 'XWIN_IMAGE'
+            y_key = 'YWIN_IMAGE'
+        cat = ascii.read(filename)
+        cat[x_key] -= 1
+        cat[y_key] -= 1
+        return cat
 
     def read_zern_file(self,filename, **kwargs):
         from astropy.io import ascii
@@ -172,17 +180,30 @@ class FileIO():
     def remap_wcs(self,inimage,refimage,outimage,**kwargs):
         from pyraf import iraf
         try:
-            extval = kwargs['ext']
+            sciext = kwargs['sci']
+            templext = kwargs['ref']
         except KeyError:
-            extval=0
-        ext = '[{}]'.format(extval)
-        return iraf.wregister(input=inimage+ext, output=outimage, wcs="world",
-                        reference=refimage+ext, Stdout=1)
+            sciext = 0
+            templext = 0
+        sci_ext = '[{}]'.format(sciext)
+        ref_ext = '[{}]'.format(templext)
+        print(inimage+sci_ext)
+        print(refimage+ref_ext)
+        return iraf.wregister(input=inimage+sci_ext, output=outimage, wcs="world",
+                        reference=refimage+ref_ext, Stdout=1)
 
-    def remap_spalipy(self,incat,refcat,inimage,output):
+    def remap_spalipy(self,incat,refcat,inimage,output,**kwargs):
         from spalipy import spalipy
+        try:
+            sciext = kwargs['sci']
+            templext = kwargs['ref']
+        except KeyError:
+            sciext = 0
+            templext = 0
+        sci_ext = '[{}]'.format(sciext)
         s = spalipy.Spalipy(incat, refcat, inimage,output_filename=output)
         s.main()
+        print(output)
         return
 
     def run_hotpants(self,infile,alreffile,subfile,convfile,hpargs=None,**kwargs):
@@ -453,9 +474,9 @@ class FileIO():
                         iregID.write('circle(%s,%s,12.8744")' % (ra_hms,dec_hms))
                         iregID.write("\n")
                     else:
-                        if zdist <= trans_less:
-                            ra_hms = self.deg2HMS(trans_item.ra)
-                            dec_hms = self.deg2DMS(trans_item.dec)
+                        if zdist <= filter_dz:
+                            ra_hms = self.deg2HMS(ra)
+                            dec_hms = self.deg2DMS(dec)
                             iregID.write('circle(%s,%s,12.8744")' % (ra_hms,dec_hms))
                             iregID.write("\n")
         iregID.close()
