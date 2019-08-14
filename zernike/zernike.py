@@ -336,7 +336,7 @@ class Shapelet:
                     wf_s_coeff_gauss        = np.array([-99.0]*self.nzmax)
                     wf_s_coeff_gauss_std    = np.array([-99.0]*self.nzmax)
                     wf_s_coeff_gauss_chi2   = np.array([-99.0]*self.nzmax)
-                    pass
+                    passz
 
             len_wf_s_coeff_list = len(wf_s_coeff_list)
             len_cat_filter = len(cat_filter)
@@ -552,7 +552,6 @@ class Shapelet:
             if not os.path.isfile(self.fullincat):
                 fileIO.sextractor_script(self.fullin+sci_ext, self.fullincat, self.sfiles)
             img_cat = fileIO.read_file(self.fullincat)
-            print(self.fullinterp)
 
             if not os.path.isfile(self.fullrefcat):
                 fileIO.sextractor_script(self.fullref+ref_ext, self.fullrefcat, self.sfiles)
@@ -578,10 +577,7 @@ class Shapelet:
             os.remove(self.fullincat)
             os.remove(self.fullrefcat)
 
-
-
-
-        cat_filter = filter_catalog(ref_aligned_cat,ref_data.shape)
+        cat_filter = self.filter_catalog(self.fullinterpcat,ref_data.shape)
 
         # if not ref_hdr[zpt_key]:
         #     warnings.warn("""Please provide the ZP KEYWORD in the header.
@@ -591,10 +587,16 @@ class Shapelet:
             hp_args = self.chp
             fileIO.run_hotpants(self.fullin,self.fullinterp,self.fullsub,self.fullconv,hp_args)
 
-        if not os.path.isfile(self.fullconvcat):
-            fileIO.sextractor_script(self.fullconv,self.fullconvcat,self.sfiles)
-        if not os.path.isfile(self.fullsubcat):
-            fileIO.sextractor_script(self.fullsub,self.fullsubcat,self.sfiles)
+            if not os.path.isfile(self.fullconvcat):
+                fileIO.sextractor_script(self.fullconv,self.fullconvcat,self.sfiles)
+            if not os.path.isfile(self.fullsubcat):
+                fileIO.sextractor_script(self.fullsub,self.fullsubcat,self.sfiles)
+        else:
+            if not os.path.isfile(self.fullconvcat):
+                fileIO.sextractor_script(self.fullinterp,self.fullconvcat,self.sfiles)
+            if not os.path.isfile(self.fullsubcat):
+                fileIO.sextractor_script(self.fullsub,self.fullsubcat,self.sfiles)
+
 
         # if not os.path.isfile(self.fullconvpsf):
         conv_data = fits.getdata(self.fullinterp,ext=0)
