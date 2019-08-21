@@ -336,7 +336,7 @@ class Shapelet:
                     wf_s_coeff_gauss        = np.array([-99.0]*self.nzmax)
                     wf_s_coeff_gauss_std    = np.array([-99.0]*self.nzmax)
                     wf_s_coeff_gauss_chi2   = np.array([-99.0]*self.nzmax)
-                    passz
+                    pass
 
             len_wf_s_coeff_list = len(wf_s_coeff_list)
             len_cat_filter = len(cat_filter)

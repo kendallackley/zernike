@@ -336,7 +336,7 @@ class Shapelet:
                     wf_s_coeff_gauss        = np.array([-99.0]*self.nzmax)
                     wf_s_coeff_gauss_std    = np.array([-99.0]*self.nzmax)
                     wf_s_coeff_gauss_chi2   = np.array([-99.0]*self.nzmax)
-                    passz
+                    pass
 
             len_wf_s_coeff_list = len(wf_s_coeff_list)
             len_cat_filter = len(cat_filter)
@@ -567,9 +567,9 @@ class Shapelet:
             ref_aligned_cat = fileIO.read_file(self.fullinterpcat)
             #TODO X_IMAGE, Y_IMAGE, FLUX_BEST, FWHM_IMAGE, FLAGS
         else:
-            if not os.path.isfile(self.fullinterpcat):
-                fileIO.sextractor_script(self.fullref+ref_ext, self.fullinterpcat, self.sfiles)
             self.fullinterp = self.fullref
+            if not os.path.isfile(self.fullinterpcat):
+                fileIO.sextractor_script(self.fullinterp+ref_ext, self.fullinterpcat, self.sfiles)
             ref_aligned_cat = fileIO.read_file(self.fullinterpcat)
             ref_data,ref_hdr = fits.getdata(self.fullinterp,ext=int(self.templext),header=True)
 

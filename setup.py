@@ -8,7 +8,7 @@ from re import compile as re_compile
 PACKAGES = ['zernike'
             ]
 
-REQUIRES = ['astromatic-wrapper']
+#REQUIRES = ['astromatic-wrapper']
 # REQUIRES = ['os',
 #             'sys',v
 #             'glob',
@@ -57,6 +57,6 @@ setup(name='zern',
           "Topic :: Scientific/Engineering :: Astronomy",
           "Topic :: Scientific/Engineering :: Physics"
       ],
-      install_requires=REQUIRES,
+      #install_requires=REQUIRES,
       packages=PACKAGES,
       )

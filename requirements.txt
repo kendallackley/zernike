@@ -10,6 +10,6 @@ hotpants
 scipy
 time
 logging
-configobj
-spalipy
+>> configobj
+git+https:/spalipy
 multiprocessing
