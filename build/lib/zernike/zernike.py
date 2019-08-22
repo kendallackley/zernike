@@ -65,6 +65,13 @@ class Shapelet:
                 cpsf = self.config['SCIENCEPSF']
                 self.chp = self.config['HOTPANTSARGS']
 
+                if self.config['PIPELINEARGS']:
+                    pplnargs = self.config['PIPELINEARGS']
+                    try:
+                        self.overlap_frac = float(pplnargs['align_overlap_frac'])
+                    except:
+                        pass
+
                 if self.config['EXTENSIONS']:
                     exts = self.config['EXTENSIONS']
                     try:
@@ -182,8 +189,6 @@ class Shapelet:
             self.disk_rad = float(czern['disk_rad'])
             self.sub_dim = int(czern['sub_dim'])
             self.dzmax = float(czern['dz_max'])
-
-            self.overlap_frac = float(self.chp['align_overlap_frac'])
 
 
             try:
@@ -567,9 +572,9 @@ class Shapelet:
             ref_aligned_cat = fileIO.read_file(self.fullinterpcat)
             #TODO X_IMAGE, Y_IMAGE, FLUX_BEST, FWHM_IMAGE, FLAGS
         else:
-            if not os.path.isfile(self.fullinterpcat):
-                fileIO.sextractor_script(self.fullref+ref_ext, self.fullinterpcat, self.sfiles)
             self.fullinterp = self.fullref
+            if not os.path.isfile(self.fullinterpcat):
+                fileIO.sextractor_script(self.fullinterp+ref_ext, self.fullinterpcat, self.sfiles)
             ref_aligned_cat = fileIO.read_file(self.fullinterpcat)
             ref_data,ref_hdr = fits.getdata(self.fullinterp,ext=int(self.templext),header=True)
 
@@ -585,12 +590,10 @@ class Shapelet:
 
         if self.subtract:
             hp_args = self.chp
-            fileIO.run_hotpants(self.fullin,self.fullinterp,self.fullsub,self.fullconv,hp_args)
-
-            if not os.path.isfile(self.fullconvcat):
-                fileIO.sextractor_script(self.fullconv,self.fullconvcat,self.sfiles)
-            if not os.path.isfile(self.fullsubcat):
-                fileIO.sextractor_script(self.fullsub,self.fullsubcat,self.sfiles)
+            print(hp_args)
+            fileIO.run_hotpants(self.fullin,self.fullinterp,self.fullsub,self.fullconv,**hp_args)
+            fileIO.sextractor_script(self.fullconv,self.fullconvcat,self.sfiles)
+            fileIO.sextractor_script(self.fullsub,self.fullsubcat,self.sfiles)
         else:
             if not os.path.isfile(self.fullconvcat):
                 fileIO.sextractor_script(self.fullinterp,self.fullconvcat,self.sfiles)

@@ -311,7 +311,7 @@ class FileIO():
        [-v] verbosity    : level of verbosity, 0-2 (1)
         """
         hpargs = []
-        for kw in kwargs:
+        for kw in kwargs.keys():
             hpargs.append(" -{} {} ".format(kw,kwargs[kw]))
         # try:
         #     kwargs['oci']
@@ -325,7 +325,9 @@ class FileIO():
         #     pass
 
         args = ['hotpants -inim '+infile+' -tmplim '+alreffile+' -outim '+
-                subfile+' -oci '+convfile+' '.join(hpargs)]
+                subfile+' -oci '+convfile+' -n i -sconv '.join(hpargs)]
+
+        print(args)
 
         subprocess.call(args,shell=True)
         # VS subprocess.Popen(args).wait() for error handling
