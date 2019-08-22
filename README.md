@@ -33,7 +33,8 @@ z = zernike.Shapelet(inimage=inimage,refimage=refimage,config=config,
 z.main()
 
 ### If align=0 and wcs_flag=0, then you must have the aligned template in the inpath.
-### If align=1 and wcs_flag=0, then spalipy will run If align=1 and wcs_flag=1, then iraf.wregister will run
+### If align=1 and wcs_flag=0, then spalipy will run 
+### If align=1 and wcs_flag=1, then iraf.wregister will run
 
 ### If subtract=1 then HOTPANTS will run, else the subtracted file must be in the outpath. 
 
