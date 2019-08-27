@@ -311,8 +311,11 @@ class FileIO():
        [-v] verbosity    : level of verbosity, 0-2 (1)
         """
         hpargs = []
+
         for kw in kwargs.keys():
-            hpargs.append(" -{} {} ".format(kw,kwargs[kw]))
+            if kw not in ['tmpl' ,'sci']:
+                hpargs.append(" -{} {} ".format(kw,kwargs[kw]))
+        print(hpargs)
         # try:
         #     kwargs['oci']
         #     refcfile = kwargs['oci']
@@ -324,8 +327,8 @@ class FileIO():
         #     hpargs.append(" -{} {} ".format('oci', refcfile))
         #     pass
 
-        args = ['hotpants -inim '+infile+' -tmplim '+alreffile+' -outim '+
-                subfile+' -oci '+convfile+' -n i -sconv '.join(hpargs)]
+        args = ['hotpants -inim '+infile+kwargs['sci']+' -tmplim '+alreffile+kwargs['tmpl']+' -outim '+
+                subfile+' -oci '+convfile+' -n i -sconv '+''.join(hpargs)]
 
         print(args)
 

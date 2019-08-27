@@ -237,10 +237,6 @@ class Shapelet:
                 self.zpt_err = 0
                 warnings.warn('No ZP Keyword header given. Using ZP=0')
 
-
-
-
-
     def check_reference(self,inimage,refimage):
         from spherical_geometry import polygon
         hdr = fits.getheader(inimage,ext=self.sciext)
@@ -374,23 +370,10 @@ class Shapelet:
 
         sep_val     = np.linspace(-.5,.5,4)
         cent_val    = np.array([(sep_val[i]+sep_val[i+1])/2.0 for i in range(len(sep_val)-1)])
-        # for cat_num, cat_item in enumerate(cat_filter):
-        #     x           = cat_item[x_key]
-        #     y           = cat_item[y_key]
-        #     x_int       = int(round(x))
-        #     y_int       = int(round(y))
-        #     dx          = x_int-x
-        #     dy          = y_int-y
 
         tile_cat    = [[[cat_item for cat_num,cat_item in enumerate(cat_filter) if sep_val[i] <= (int(round(cat_item[x_key])) - cat_item[x_key]) < sep_val[i+1] and sep_val[j] <= (int(round(cat_item[y_key])) - cat_item[y_key]) < sep_val[j+1]] for i in range(len(sep_val)-1)] for j in range(len(sep_val)-1)]
 
-            # for i in range(len(sep_val)-1):
-            #     for j in range(len(sep_val)-2):
-            #         if (sep_val[i] <= dx < sep_val[i+1]) and (sep_val[j] <= dy < sep_val[j+1]):
-            #             tile_cat.append(cat_item)
-
         wf_list_tile = [[[impsf.img2wf(img_data,cat_item[x_key],cat_item[y_key],self.sub_dim,disk_mask) for cat_item in tile_cat[j][i]] for i in range(3)] for j in range(3)]
-        # wf_list_tile = [[[impsf.img2wf_shift(img_data,cat_item[x_key],cat_item[y_key],int(round(cat_item[x_key])) - cat_item[x_key],int(round(cat_item[y_key])) - cat_item[y_key],self.sub_dim,disk_mask) for cat_num,cat_item in enumerate(tile_cat[j][i])] for i in range(3)] for j in range(3)]
 
         psf_wf_tile=np.zeros((3,3,self.disk_dim,self.disk_dim))
         for m in range(0,3):
@@ -425,26 +408,6 @@ class Shapelet:
 
         return psf_inj_norm
 
-        # import matplotlib.pylot as plt
-        # f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3,3)
-        #
-        # ax2.set_title(img_file)
-        # ax1.imshow(psf_inj_norm[0][0])
-        # ax2.imshow(psf_inj_norm[0][1])
-        # ax3.imshow(psf_inj_norm[0][2])
-        # ax4.imshow(psf_inj_norm[1][0])
-        # ax5.imshow(psf_inj_norm[1][1])
-        # ax6.imshow(psf_inj_norm[1][2])
-        # ax7.imshow(psf_inj_norm[2][0])
-        # ax8.imshow(psf_inj_norm[2][1])
-        # cax = ax9.imshow(psf_inj_norm[2][2])
-        # f.colorbar(cax)
-        # plt.savefig('/Users/kack0001/astro-tools/goto/qa_test/zernike_qa/out/'+img_file[:-5]+'.png')
-        #
-        #
-        # np.savetxt('/Users/kack0001/astro-tools/goto/qa_test/zernike_qa/out/'+img_file[:-5]+"1_1.csv", psf_inj_norm[1][1], delimiter=",")
-
-        return psf_inj_norm[1][1]
     def make_transient_catalog(self,cat_file,img_data,zern_stats,*kwargs):
 
         try:
@@ -504,13 +467,11 @@ class Shapelet:
                     continue
         print(len(trans_list))
         if len(trans_list):
-            full_reg     = self.fulltrans.replace('.trans','.reg')
-            full_regdz     = self.fulltrans.replace('_less.trans','.reg')
-
-            # s_trans_reg10   = cat_file.replace('.cat','dz10.reg')
             len_cat = len(cat)
             fileIO.write_trans_file(self.fulltrans,trans_list,len_cat,self.dzmax)
+            full_reg     = self.fulltrans.replace('.trans','.reg')
             fileIO.write_reg(full_reg,trans_list,filter_trans=0)
+            full_regdz     = fullreg.replace('.reg','_less.reg')
             fileIO.write_reg(full_regdz,trans_list,filter_trans=1,filter_dz=20)
         else:
             warnings.warn("No transients found in image!")
@@ -535,7 +496,7 @@ class Shapelet:
         if overlap < 0.05:
             warnings.error("The two images have no overlap in WCS coordinates")
         elif overlap < self.overlap_frac:
-            warnings.warn("The two images have less than {}% in WCS coordinates".format(self.overlap_frac*100))
+            warnings.warn("The two images have less than {}% in WCS coordinates".format(overlap*100))
         print("The images have {}% overlap".format(overlap*100))
 
 
@@ -590,6 +551,8 @@ class Shapelet:
 
         if self.subtract:
             hp_args = self.chp
+            hp_args['sci'] = sci_ext
+            hp_args['tmpl'] = ref_ext
             fileIO.run_hotpants(self.fullin,self.fullinterp,self.fullsub,self.fullconv,**hp_args)
             fileIO.sextractor_script(self.fullconv,self.fullconvcat,self.sfiles)
             fileIO.sextractor_script(self.fullsub,self.fullsubcat,self.sfiles)

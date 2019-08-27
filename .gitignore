@@ -2,3 +2,7 @@ __pycache__
 images
 out
 tmp*
+zernike/param_file.conf
+imxy*
+.DS_Store
+wregister.db

@@ -504,13 +504,11 @@ class Shapelet:
                     continue
         print(len(trans_list))
         if len(trans_list):
-            full_reg     = self.fulltrans.replace('.trans','.reg')
-            full_regdz     = self.fulltrans.replace('_less.trans','.reg')
-
-            # s_trans_reg10   = cat_file.replace('.cat','dz10.reg')
             len_cat = len(cat)
             fileIO.write_trans_file(self.fulltrans,trans_list,len_cat,self.dzmax)
+            full_reg     = self.fulltrans.replace('.trans','.reg')
             fileIO.write_reg(full_reg,trans_list,filter_trans=0)
+            full_regdz     = self.fullreg.replace('.reg','_less.reg')
             fileIO.write_reg(full_regdz,trans_list,filter_trans=1,filter_dz=20)
         else:
             warnings.warn("No transients found in image!")
@@ -590,7 +588,8 @@ class Shapelet:
 
         if self.subtract:
             hp_args = self.chp
-            print(hp_args)
+            hp_args['sci'] = sci_ext
+            hp_args['tmpl'] = ref_ext
             fileIO.run_hotpants(self.fullin,self.fullinterp,self.fullsub,self.fullconv,**hp_args)
             fileIO.sextractor_script(self.fullconv,self.fullconvcat,self.sfiles)
             fileIO.sextractor_script(self.fullsub,self.fullsubcat,self.sfiles)
