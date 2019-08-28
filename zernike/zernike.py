@@ -471,7 +471,7 @@ class Shapelet:
             fileIO.write_trans_file(self.fulltrans,trans_list,len_cat,self.dzmax)
             full_reg     = self.fulltrans.replace('.trans','.reg')
             fileIO.write_reg(full_reg,trans_list,filter_trans=0)
-            full_regdz     = fullreg.replace('.reg','_less.reg')
+            full_regdz     = full_reg.replace('.reg','_less.reg')
             fileIO.write_reg(full_regdz,trans_list,filter_trans=1,filter_dz=20)
         else:
             warnings.warn("No transients found in image!")
