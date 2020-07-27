@@ -376,7 +376,7 @@ class Shapelet:
         plt.savefig(tile_name)
         plt.close()
 
-        return tile_ref_name, tile_ref
+        return tile_ref_name, tile_name
 
     def make_transient_catalog(self,cat_file,img_data,zern_stats,*kwargs):
 
