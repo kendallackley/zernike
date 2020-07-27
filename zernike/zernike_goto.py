@@ -312,7 +312,7 @@ class Shapelet:
             # return
 
 
-    def plot_psf_array(self,cat_file,img_data,img_out_dir,ext=0,**kwargs):
+    def plot_psf_array(self,cat_file,img_data,ext=0,**kwargs):
 
         try:
             x_key = kwargs['x_key']
