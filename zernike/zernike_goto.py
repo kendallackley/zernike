@@ -312,7 +312,7 @@ class Shapelet:
             # return
 
 
-    def plot_psf_array(self,cat_file,img_data,ext=0,**kwargs):
+    def plot_psf_array(self,cat_file,img_data,img_out_dir,ext=0,**kwargs):
 
         try:
             x_key = kwargs['x_key']
@@ -347,8 +347,8 @@ class Shapelet:
                 psf_wf_tile[m,n]     = wf_avg/wf_avg.sum()
                 print(m,n,len(wf_list_tile[m][n]))
 
-        tile_ref_name = self.outpath+os.path.splitext(cat_file)[0]+'_ref_tile.png'
-        tile_name = self.outpath+os.path.splitext(cat_file)[0]+'_ref.png'
+        tile_ref_name = os.path.splitext(cat_file)[0]+'_ref_tile.png'
+        tile_name = os.path.splitext(cat_file)[0]+'_ref.png'
 
         psf_inj = np.array(psf_wf_tile,copy=True)
 
