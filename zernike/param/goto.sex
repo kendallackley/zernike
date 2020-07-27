@@ -20,7 +20,7 @@ DETECT_THRESH	  1.5		# <sigmas> or <threshold>,<ZP> in mag.arcsec-2
 ANALYSIS_THRESH	1.5		# <sigmas> or <threshold>,<ZP> in mag.arcsec-2
 
 FILTER		Y	# apply filter for detection ("Y" or "N")?
-FILTER_NAME	/Users/kack0001/astro-tools/goto/ppln_goto/param/gauss_2.5_5x5.conv	# name of the file containing the filter
+FILTER_NAME	/export/gotodata1/ackley/github/zernike/zernike/param/gauss_2.5_5x5.conv	# name of the file containing the filter
 FILTER_THRESH	3		#
 
 DEBLEND_NTHRESH  16             # Number of deblending sub-thresholds
@@ -51,7 +51,7 @@ PIXEL_SCALE	1.25		# size of pixel in arcsec (0=use FITS WCS info).
 # ------------------------ Star/Galaxy Separation ----------------------------
 
 SEEING_FWHM	2.0		# stellar FWHM in arcsec
-STARNNW_NAME	/Users/kack0001/astro-tools/goto/ppln_goto/param/default.nnw	# Neural-Network_Weight table filename
+STARNNW_NAME	/export/gotodata1/ackley/github/zernike/zernike/param/default.nnw	# Neural-Network_Weight table filename
 
 # ----------------------------- Background -----------------------------------
 
