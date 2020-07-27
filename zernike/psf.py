@@ -3,7 +3,7 @@
 
 import numpy as np
 from astropy.table import Table
-from scipy.misc import factorial as fac
+from scipy.special import factorial as fac
 
 from . import base
 
@@ -129,7 +129,11 @@ class ZernikePoly():
 
     def wf_comp_brief(self,z_vec,zern_list):
         wf_temp = sum(val*zern_list[i] for (i, val) in enumerate(z_vec))
+        # print('wf_comp_brief',wf_temp.sum())
+        # if wf_temp.sum():
         return wf_temp/wf_temp.sum()
+        # else:
+        #     return wf_temp
 
     def wf_comp(self,z_vec,dim):
         zern_list,mask   = self.create_zern_list(len(z_vec),dim)
@@ -228,10 +232,15 @@ class PSF():
 
         sub_dim     = sub_img.shape[0]
         disk_dim    = disk_mask.shape[0]
-        min_dim = int((sub_dim-1)/2-(disk_dim-1)/2)
-        max_dim = int((sub_dim-1)/2+(disk_dim+1)/2)
-        disk_img    = sub_img[min_dim:max_dim,min_dim:max_dim]*disk_mask
+        # min_dim = int((sub_dim-1)/2-(disk_dim-1)/2)
+        # max_dim = int((sub_dim-1)/2+(disk_dim+1)/2)
+        # disk_img    = sub_img[min_dim:max_dim,min_dim:max_dim]*disk_mask
+        disk_img = sub_img[int((sub_dim-1)/2-(disk_dim-1)/2):int((sub_dim-1)/2+(disk_dim+1)/2),int((sub_dim-1)/2-(disk_dim-1)/2):int((sub_dim-1)/2+(disk_dim+1)/2)]*disk_mask
+        # print('disk_img',disk_img.sum())
+        # if disk_img.sum():
         return disk_img/disk_img.sum()
+        # else:
+        #     return disk_img
 
     def img2wf(self,img,x,y,sub_dim,disk_mask):
 
@@ -374,7 +383,7 @@ class Catalog():
             flux_key = kwargs['flux_key']
         except:
             flux_key = 'FLUX_AUTO'
-        print(flux_min,flux_max)
+        print('FLUX_MIN = {}, FLUX_MAX = {}'.format(flux_min,flux_max))
 
         return cat_list[(cat_list[flux_key] <= flux_max) & (cat_list[flux_key] > flux_min)]
 
@@ -414,8 +423,8 @@ class Catalog():
 
         zc_list     =   []
         for i, cat_item in enumerate(cat_list):
-            dx          = int(round(cat_item.x))-cat_item.x
-            dy          = int(round(cat_item.y))-cat_item.y
+            dx          = cat_item.x - int(round(cat_item.x))
+            dy          = cat_item.y - int(round(cat_item.y))
             wf_img      = psf.img2wf_shift(img_data,cat_item.x,cat_item.y,dx,dy,surr_dim,disc_dim)
             zc_item     = zernpoly.zern_fit(wf_img,zern_list,cov_mat_inv)
             wf_rec      = zernpoly.wf_comp_brief(zc_item,zern_list,grid_mask)
@@ -431,7 +440,8 @@ class Catalog():
 
     def calc_zdist_med_std(self,zz,ref_zz):
         import numpy as np
-        return np.sqrt(np.sum([((zz[i]-ref_zz['MED'][i])/ref_zz['MEAN_STD'][i])**2 for i in range(len(zz))]))
+        # return np.sqrt(np.sum([((zz[i]-ref_zz['MED'][i])/ref_zz['MEAN_STD'][i])**2 for i in range(len(zz))]))
+        return np.sqrt(np.sum([((zz[i]-ref_zz['MED'][i])/ref_zz['MED_STD'][i])**2 for i in range(len(zz))]))
 
     def gfit_zerndist(self,zc_lst,n_bins):
         import numpy as np

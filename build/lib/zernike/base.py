@@ -119,7 +119,10 @@ class FileIO():
             sargs.append(" -{} {} ".format('c',sex_param))
             sargs.append(" -{} {} ".format('CATALOG_NAME',catfile))
 
+
+
         args = [cmd+' '+infile+' '.join(sargs)]
+        print(args)
         subprocess.call(args,shell=True)
         return
 
@@ -187,8 +190,6 @@ class FileIO():
             templext = 0
         sci_ext = '{}'.format(sciext)
         ref_ext = '{}'.format(templext)
-        print(inimage+sci_ext)
-        print(refimage+ref_ext)
         return iraf.wregister(input=inimage+sci_ext, output=outimage, wcs="world",
                         reference=refimage+ref_ext, Stdout=1)
 
@@ -203,7 +204,6 @@ class FileIO():
         sci_ext = '[{}]'.format(sciext)
         s = spalipy.Spalipy(incat, refcat, inimage,output_filename=output)
         s.main()
-        print(output)
         return
 
     def run_hotpants(self,infile,alreffile,subfile,convfile,hpargs=None,**kwargs):
@@ -315,7 +315,6 @@ class FileIO():
         for kw in kwargs.keys():
             if kw not in ['tmpl' ,'sci']:
                 hpargs.append(" -{} {} ".format(kw,kwargs[kw]))
-        print(hpargs)
         # try:
         #     kwargs['oci']
         #     refcfile = kwargs['oci']
@@ -326,12 +325,10 @@ class FileIO():
         #     refcfile = reffile.replace('.fits','_conv.fits')
         #     hpargs.append(" -{} {} ".format('oci', refcfile))
         #     pass
-
+        print('Running HOTPANTS')
         args = ['hotpants -inim '+infile+kwargs['sci']+' -tmplim '+alreffile+kwargs['tmpl']+' -outim '+
-                subfile+' -oci '+convfile+' -n i -sconv '+''.join(hpargs)]
-
-        print(args)
-
+                subfile+ ' -oci '+convfile + ' -n i -sconv '+''.join(hpargs)] #' -oci '+convfile
+        print(args,convfile)
         subprocess.call(args,shell=True)
         # VS subprocess.Popen(args).wait() for error handling
         return
@@ -371,7 +368,7 @@ class FileIO():
             psfID.close()
         return
 
-    def write_trans_file(self,trans_file,trans_list,len_sub_cat,dz_max):
+    def write_trans_file(self,trans_file,trans_list,len_sub_cat,dz_max,filter_trans=0,filter_dz=0):
         print('WRITING TRANS FILE TO',trans_file)
         with open(trans_file, 'w') as transID:
             transID.write("# Zernike Distance: \t%5g\n" %dz_max)
@@ -396,6 +393,9 @@ class FileIO():
             for i,trans_item in enumerate(trans_list):
                 x,y,snr,zdist,mag_inst,mag_inst_err,ra,dec,flux,flux_err,\
                                 mag_app,mag_app_err,fwhm=trans_item
+                if filter_trans and zdist > filter_dz:
+                    continue
+
                 transID.write("%4g" % i)
                 transID.write("\t%6.2f"  % zdist)
                 transID.write("\t%11.6f" % x)
@@ -451,9 +451,9 @@ class FileIO():
        s = dec*180./5.
 
        if s == -1:
-          return '-%02d:%02d:%06.3f'%(d,m,s)
+          return '+%02d:%02d:%06.3f'%(d,m,s)
        else:
-           return '+%02d:%02d:%06.3f'%(d,m,s)
+           return '-%02d:%02d:%06.3f'%(d,m,s)
 
 
     def write_reg(self,reg_file,trans_list,filter_trans=0,filter_dz=0):
@@ -468,21 +468,15 @@ class FileIO():
                 x,y,snr,zdist,mag_inst,mag_inst_err,ra,dec,flux,flux_err,\
                                 mag_app,mag_app_err,fwhm=trans_item
                 if not filter_trans:
-                    ra_hms = self.deg2HMS(ra)
-                    dec_hms = self.deg2DMS(dec)
-                    iregID.write('circle(%s,%s,17.8744")' % (ra_hms,dec_hms))
+                    iregID.write('circle(%s,%s,17.8744")' % (ra,dec))
                     iregID.write("\n")
                 else:
                     if not filter_dz:
-                        ra_hms = self.deg2HMS(ra)
-                        dec_hms = self.deg2DMS(dec)
-                        iregID.write('circle(%s,%s,12.8744")' % (ra_hms,dec_hms))
+                        iregID.write('circle(%s,%s,12.8744")' % (ra,dec))
                         iregID.write("\n")
                     else:
                         if zdist <= filter_dz:
-                            ra_hms = self.deg2HMS(ra)
-                            dec_hms = self.deg2DMS(dec)
-                            iregID.write('circle(%s,%s,12.8744")' % (ra_hms,dec_hms))
+                            iregID.write('circle(%s,%s,12.8744")' % (ra,dec))
                             iregID.write("\n")
         iregID.close()
         return

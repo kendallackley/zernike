@@ -7,5 +7,6 @@ zern.egg-info/top_level.txt
 zernike/__init__.py
 zernike/base.py
 zernike/psf.py
+zernike/test_conda.py
 zernike/version.py
 zernike/zernike.py

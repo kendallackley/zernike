@@ -37,19 +37,19 @@ trans = base.TransObj()
 
 class Shapelet:
 
-    def __init__(self,inimage,refimage,config,inpath,subimage=None,parampath=None,psfpath=None,
-                catpath=None, transpath=None, refpath=None,outpath=None,nthreads=1,verbose=False,
-                del_tmp=False,wcs_flag=True,align=False,subtract=False, plot_psf=False):
+    def __init__(self,inimage,config,outpath=None,catpath=None,nthreads=1,
+                verbose=False,del_tmp=False,make_trans=True,plot_psf=True,
+                save_as_array=True):
 
         # if isinstance(ncpus,float):
         #     self.cpupool = Pool(ncpus)
 
         self.verbose = verbose
         self.del_tmp = del_tmp
-        self.wcs_flag = wcs_flag
-        self.align = align
-        self.subtract = subtract
+        self.make_trans = make_trans
         self.plot_psf = plot_psf
+        self.save_as_array = save_as_array
+        self.save_to_file = save_to_file
 
         if isinstance(config,str):
             try:
@@ -65,17 +65,8 @@ class Shapelet:
                               """)
                 log.critical("""No config file found""")
             else:
-                paths = self.config['PATHS']
                 czern = self.config['ZERNIKEDECOMP']
                 cpsf = self.config['SCIENCEPSF']
-                self.chp = self.config['HOTPANTSARGS']
-
-                if self.config['PIPELINEARGS']:
-                    pplnargs = self.config['PIPELINEARGS']
-                    try:
-                        self.overlap_frac = float(pplnargs['align_overlap_frac'])
-                    except:
-                        pass
 
                 if self.config['EXTENSIONS']:
                     exts = self.config['EXTENSIONS']
@@ -88,132 +79,41 @@ class Shapelet:
 
             #TODO Don't hardcode this
 
+
             if isinstance(inimage, str):
                 self.inimage = inimage
-
-            if isinstance(refimage, str):
-                self.refimage = refimage
-
-            if isinstance(inpath, str):
-                self.inpath = inpath
-
-            if isinstance(refpath, str):
-                self.refpath = refpath
-                print(refpath)
-
-            if isinstance(subimage,str):
-                self.subimage = subimage
-
-                #TODO fix refpath
-            self.projpath = paths['project_dir']
-
-            if refpath is None:
-                # self.refpath = paths['ref_path']
-                self.refpath = inpath
-            if inpath is None:
-                self.inpath = paths['img_path']
-
-
-            #TODO Good candidate for decorator
-            self.parampath= parampath
-            if self.parampath is None:
-                self.parampath = paths['param_path']
-
-            if isinstance(psfpath, str):
-                self.psfpath = psfpath
-                if not os.path.exists(self.psfpath):
-                    os.makedirs(self.psfpath)
+            # self.fullinimage = self.inimage+'[{}]'.format(self.sciext)
+            incat_file = self.inimage.replace('.fits','_in.cat')
+            self.fullincat = os.path.join(self.catpath,incat_file)
 
             if isinstance(catpath, str):
                 self.catpath = catpath
-                if not os.path.exists(self.catpath):
-                    os.makedirs(self.catpath)
-
-            if isinstance(transpath, str):
-                self.transpath = transpath
-                if not os.path.exists(self.transpath):
-                    os.makedirs(self.transpath)
+                os.makedirs(self.catpath,exist_ok=True)
 
             if isinstance(outpath, str):
                 self.outpath = outpath
-                if not os.path.exists(self.outpath):
-                    os.makedirs(self.outpath)
+                os.makedirs(self.outpath,exist_ok=True)
 
             if isinstance(nthreads,float):
                 self.iopool = ThreadPool(nthreads)
 
-            # Assign names and output paths for the pipeline products
-            if self.subtract:
-                subfile = self.inimage.replace('.fits','_sub.fits')
-                self.fullsub = os.path.join(self.outpath,subfile)
-
-                conv_file = self.refimage.replace('.fits','_conv.fits')
-                self.fullconv = os.path.join(self.refpath,conv_file)
-
-                conv_cat_file = conv_file.replace('.fits','.cat')
-                self.fullconvcat = os.path.join(self.catpath,conv_cat_file)
-
-                conv_psf_file = conv_file.replace('.fits','.psf')
-                self.fullconvpsf = os.path.join(self.psfpath,conv_psf_file)
-
-                self.convpath = self.refpath
-                self.conv_cat_path = self.refcatpath
-                self.conv_psf_path = self.psfpath
-            else:
-                if subimage is None:
-                    print('Please define the subtracted image')
-                else:
-                    subfile = self.subimage
-                    self.fullsub = os.path.join(self.refpath,subfile)
-
-                conv_file = self.refimage
-                self.fullconv = os.path.join(self.refpath,conv_file)
-
-                conv_cat_file = conv_file.replace('.fits','.cat')
-                self.fullconvcat = os.path.join(self.catpath,conv_cat_file)
-
-                conv_psf_file = conv_file.replace('.fits','.psf')
-                self.fullconvpsf = os.path.join(self.psfpath,conv_psf_file)
-
-                self.convpath = self.refpath
-                self.conv_cat_path = self.catpath
-                self.conv_psf_path = self.psfpath
-
-
+            subfile = self.inimage
+            # self.fullsub = self.inimage+'[{}]'.format(self.subext)
+            self.fullsub = subfile
             subcat_file = subfile.replace('.fits','.cat')
             self.fullsubcat = os.path.join(self.catpath,subcat_file)
 
-            incat_file = self.inimage.replace('.fits','_in.cat')
-            self.fullincat = os.path.join(self.catpath,incat_file)
+            reffile = self.inimage
+            # self.fullref = self.inimage+'[{}]'.format(self.templ_ext)
+            self.fullref = reffile
+            ref_cat_file = reffile.replace('.fits','.cat')
+            self.fullrefcat = os.path.join(self.catpath,ref_cat_file)
 
-            refcat_file = self.refimage.replace('.fits','_ref.cat')
-            self.fullrefcat = os.path.join(self.catpath,refcat_file)
-
-            interp_file = self.refimage.replace('.fits','_interp_tmpl.fits')
-            self.fullinterp = os.path.join(self.refpath,interp_file)
-
-            interp_cat_file = interp_file.replace('.fits','.cat')
-            self.fullinterpcat = os.path.join(self.catpath,interp_cat_file)
-
-            trans_file = self.fullinterpcat.replace('.cat','.trans')
-            self.fulltrans = os.path.join(self.transpath,trans_file)
-
-            self.incatpath = self.catpath
-            self.refcatpath = self.catpath
-            self.tmplpath = paths['templ_path']
-            # if self.subpath is None:
-            #     self.subpath = paths['sub_path']
-            if self.transpath is None:
-                self.transpath = paths['trans_path']
-
-
-
-            # conv_cat_file = ref_cat.replace('.cat','_conv.cat')
-            # conv_psf_path = psf_path
-            # conv_psf_file = psf_file
-
-            self.fullin = os.path.join(self.inpath,self.inimage)
-            self.fullref = os.path.join(self.refpath,self.refimage)
+            # TODO TURN ON WHEN CONVOLVED IMAGE OUTPUT FROM HOTPANTS WORKS
+            # convfile = self.inimage
+            # self.fullconv = self.inimage+'[{}]'.format(self.templ_ext)
+            # conv_cat_file = convfile.replace('.fits','.cat')
+            # self.fullconvcat = os.path.join(self.catpath,conv_cat_file)
 
             self.nzmax = int(czern['nz_max'])
             self.disk_dim = int(czern['disk_dim'])
@@ -223,9 +123,8 @@ class Shapelet:
 
             global j_vec,zern_list,disk_mask,cov_mat_inv
             j_vec = range(1,self.nzmax+1)
-            zern_list,disk_mask = zern_poly.create_fzern_list(j_vec,self.disk_dim,self.disk_rad,0.0,0.0,27)
+            zern_list,disk_mask = zern_poly.create_fzern_list(j_vec,self.disk_dim,self.disk_rad,0.0,0.0,self.sub_dim)
             cov_mat_inv = zern_poly.inv_cov_mat(zern_list)
-
 
             try:
                 self.cls_min = float(cpsf['cls_sci_min'])
@@ -242,20 +141,6 @@ class Shapelet:
             except KeyError:
                 self.flag_req = 0
                 warnings.warn("No FLAG_REQ given in param file. Using Flag=0")
-
-            try:
-                mag_min = float(cpsf['mag_sci_min'])
-                mag_max = float(cpsf['mag_sci_max'])
-                self.flux_min = 10**(-mag_min/2.5)
-                self.flux_max = 10**(-mag_max/2.5)
-            except KeyError:
-                try:
-                    self.flux_min = float(cpsf['flux_sci_min'])
-                    self.flux_max = float(cpsf['flux_sci_max'])
-                except KeyError:
-                    warnings.warn("""No Mag or Flux limits given in param file.
-                                Please define at least on set of mag or flux""")
-                    # log.critical("""No Mag or Flux given in param file""")
 
             try:
                 zp_key = cpsf['zp_keyword']
@@ -320,26 +205,19 @@ class Shapelet:
          " CLASS_STAR filter {} to {}.".format(self.cls_min,self.cls_max))
         del(cat_filter)
         ## TODO: Add SATURATION FLAG
-        ## TODO: FIX THAT UPPERLIMIT MESS
-        # catflux = np.array([c for c in cat_filter2[flux_key] if c > 0 and c < 200000])
-        # mean = catflux.mean()
-        # std = catflux.std()
-        # median =np.median(catflux)
-        # self.flux_max = mean + 3*std
-        # self.flux_min = median
-        # if self.flux_min < 0 :
-        #     self.flux_min = 0
-        # self.flux_min = 5000
-        # self.flux_max = 40000
         catflux = cat_filter2.to_pandas()[flux_key]
-        self.flux_max = catflux.quantile(0.75)
-        self.flux_min = catflux.quantile(0.05)
+        catflux_clip = sigma_clip(catflux, sigma=3, maxiters=3)
+        self.flux_max = catflux_clip.quantile(0.95)
+        self.flux_min = catflux_clip.quantile(0.05)
+        del catflux, catflux_clip
         print('FLUX MAX AND MIN',self.flux_max,self.flux_min)
         cat_filter3 = misc.filter_cat_flux(cat_filter2,self.flux_min,self.flux_max)
         print( str(len(cat_filter3))," objects remain in image catalog after flux filter.")
+        del cat_filter2
         cat_filter4 = misc.filter_cat_xy(cat_filter3,img_shape,self.sub_dim)
         print( str(len(cat_filter4))," objects remain in image catalog after filtering ",
                 "sources {} pixels from edge.".format(self.sub_dim))
+        del cat_filter3
         return cat_filter4
 
 
@@ -422,11 +300,13 @@ class Shapelet:
             #TODO  Import and run tiling script
             len_wf_s_coeff_list = len(wf_s_coeff_list)
             len_cat_filter = len(cat_filter)
-            fileIO.write_psf_file(self.fullconvpsf,self.fullinterp,self.fullconvcat,
-                wf_s_coeff_mean,wf_s_coeff_med,wf_s_coeff_gauss,self.flux_min,self.cls_min,
-                self.nzmax,self.sub_dim, self.disk_dim,self.disk_rad,len_wf_s_coeff_list,
-                len_cat_filter,wf_s_coeff_gauss_std,wf_s_coeff_gauss_chi2,
-                wf_s_coeff_mean_std,wf_s_coeff_med_std)
+            return len_wf_s_coeff_list, wf_s_coeff_med,wf_s_coeff_med_std
+            # fileIO.write_psf_file(self.fullconvpsf,self.fullinterp,self.fullconvcat,
+            #     wf_s_coeff_mean,wf_s_coeff_med,wf_s_coeff_gauss,self.flux_min,self.cls_min,
+            #     self.nzmax,self.sub_dim, self.disk_dim,self.disk_rad,len_wf_s_coeff_list,
+            #     len_cat_filter,wf_s_coeff_gauss_std,wf_s_coeff_gauss_chi2,
+            #     wf_s_coeff_mean_std,wf_s_coeff_med_std)
+            # return
 
 
     def plot_psf_array(self,cat_file,img_data,ext=0,**kwargs):
@@ -464,11 +344,14 @@ class Shapelet:
                 psf_wf_tile[m,n]     = wf_avg/wf_avg.sum()
                 print(m,n,len(wf_list_tile[m][n]))
 
+        tile_ref_name = outpath+os.path.splitext(cat_file)[0]+'_ref_tile.png'
+        tile_name = outpath+os.path.splitext(cat_file)[0]+'_ref.png'
+
         psf_inj = np.array(psf_wf_tile,copy=True)
 
         f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3,3)
 
-        ax2.set_title(self.inimage)
+        ax2.set_title(os.path.basename(cat_file))
         ax1.imshow(psf_inj[0][0])
         ax2.imshow(psf_inj[0][1])
         ax3.imshow(psf_inj[0][2])
@@ -480,12 +363,17 @@ class Shapelet:
         cax = ax9.imshow(psf_inj[2][2])
         f.colorbar(cax)
     #    plt.show()
-        plt.savefig(self.psfpath+os.path.splitext(self.inimage)[0]+'_ref.png')
+        plt.savefig(tile_ref_name)
         plt.close()
 
-        # psf_inj_norm = psf_inj/np.sum(psf_inj)
+        f, ax = plt.subplots(1,1)
+        ax.set_title(os.path.basename(cat_file))
+        cax = ax.imshow(psf_inj[1][1])
+        f.colorbar(cax)
+        plt.savefig(tile_name)
+        plt.close()
 
-        return psf_inj
+        return tile_ref_name, tile_ref
 
     def make_transient_catalog(self,cat_file,img_data,zern_stats,*kwargs):
 
@@ -494,15 +382,11 @@ class Shapelet:
             y_key = kwargs['y_key']
             flux_key = kwargs['flux_key']
             fluxerr_key =kwargs['fluxerr_key']
-            mag_key = kwargs[mag_key]
-            magerr_key = kwargs[mag_key]
         except:
             x_key = 'XWIN_IMAGE'
             y_key = 'YWIN_IMAGE'
             flux_key = 'FLUX_AUTO'
             fluxerr_key ='FLUXERR_AUTO'
-            mag_key = 'MAG_AUTO'
-            magerr_key = 'MAGERR_AUTO'
 
         cat     = fileIO.read_file(cat_file)
         cat_filter  = misc.filter_cat_xy(cat,img_data.shape,self.sub_dim)
@@ -536,140 +420,88 @@ class Shapelet:
                     mag_inst_err = cand_item[magerr_key]
                     mag_app = mag_inst + self.zpt
                     mag_app_err = np.sqrt(mag_inst_err**2+self.zpt_err**2)
-                    seeing = cand_item['FWHM_IMAGE']
+                    fwhm_image = cand_item['FWHM_IMAGE']
 
                     if wf_s_z_dist < self.dzmax:
                         trans_list.append([x,y,snr,wf_s_z_dist,
                                 mag_inst,mag_inst_err,ra,dec,flux,flux_err,mag_app,
-                                mag_app_err,seeing])
+                                mag_app_err,fwhm_image])
                 else:
                     continue
-        print(len(trans_list))
-        if len(trans_list):
-            len_cat = len(cat)
-            fileIO.write_trans_file(self.fulltrans,trans_list,len_cat,self.dzmax)
-            full_reg     = self.fulltrans.replace('.trans','.reg')
-            fileIO.write_reg(full_reg,trans_list,filter_trans=0)
-            full_regdz     = full_reg.replace('.reg','_less.reg')
-            fileIO.write_reg(full_regdz,trans_list,filter_trans=1,filter_dz=25)
-            full_transdz     = full_regdz.replace('.reg','.trans')
-            fileIO.write_trans_file(full_transdz,trans_list,len_cat,self.dzmax,filter_trans=1,filter_dz=25)
-        else:
-            warnings.warn("No transients found in image!")
+        print('Number of transients recovered',len(trans_list))
+        return trans_list
 
+    def make_temp_catalogs(self,inimage,catpath,outpath,imgtype):
 
-
-    def main(self):
-
-        #TODO -- add conversion from magnitude if there is a zp in the header
-
-
-        # self.sfiles = self.parampath + 'sex.config'
-        # print('PARAMPATH',self.parampath)
         self.sfiles = '/Users/kack0001/astro-tools/goto/ppln_goto/param/goto.sex'
-        # self.sfiles = '/Users/kack0001/astro-tools/goto/blind2/sex_config/config'
         print('SEXTRACTOR FILE: ',self.sfiles)
 
-        # if not os.path.isfile(self.fullsub) or self.subtract:
-            # warnings.warn("Running Alignment & HOTPANTS") #logger instead
+        if isinstance(catpath, str):
+            self.catpath = catpath
+            os.makedirs(self.catpath,exist_ok=True)
 
-        # overlap = self.check_reference(self.fullin,self.fullref)
-        # if overlap < 0.05:
-        #     warnings.error("The two images have no overlap in WCS coordinates")
-        # elif overlap < self.overlap_frac:
-        #     warnings.warn("The two images have less than {}% in WCS coordinates".format(overlap*100))
-        # print("The images have {}% overlap".format(round(overlap*100,3)))
+        if isinstance(outpath, str):
+            self.outpath = outpath
+            os.makedirs(self.outpath,exist_ok=True)
 
+        fitsfile = inimage.copy()
+        self.fullcat = fitsfile
 
-        #TODO: don't hardcode this in
-        #TODO: also a good candidate for decorator
-
-        sci_ext = '[{}]'.format(self.sciext)
-        ref_ext = '[{}]'.format(self.templext)
-
-        #This is for aligning based on WCS information
-
-        if self.wcs_flag and self.align:
-            fileIO.remap_wcs(self.fullin, self.fullref, self.fullinterp,
-                        **{'sci':sci_ext,'ref':ref_ext})
-
-            fileIO.sextractor_script(self.fullinterp,self.fullinterpcat,self.sfiles)
-            ref_data,ref_hdr = fits.getdata(self.fullinterp,ext=0,header=True)
-            ref_shape = ref_data.shape
-            del ref_data, ref_hdr
-
-        #This is for aligning based on affine transformations
-        elif not self.wcs_flag and self.align:
-            if not os.path.isfile(self.fullincat):
-                fileIO.sextractor_script(self.fullin+sci_ext, self.fullincat, self.sfiles)
-            img_cat = fileIO.read_file(self.fullincat)
-
-            if not os.path.isfile(self.fullrefcat):
-                fileIO.sextractor_script(self.fullref+ref_ext, self.fullrefcat, self.sfiles)
-            ref_cat = fileIO.read_file(self.fullrefcat)
-
-            fileIO.remap_spalipy(self.fullincat, self.fullrefcat,
-                                self.fullin, self.fullinterp,**{'sci':self.sciext,'ref':self.templext})
-
-            fileIO.sextractor_script(self.fullinterp,self.fullinterpcat,self.sfiles)
-
-            ref_data,ref_hdr = fits.getdata(self.fullinterp,ext=0,header=True)
-            ref_shape = ref_data.shape
-            del ref_data, ref_hdr
-            #TODO X_IMAGE, Y_IMAGE, FLUX_BEST, FWHM_IMAGE, FLAGS
-        #This is if you already have your template image definied prior to running the script.
-
-        #FIX THIS!!!! DO NOT USE THE NAME FOR THE REFERENCE IMAGE
+        if imgtype == 'sci':
+            if isinstance(inimage, str):
+                self.inimage = inimage
+            cat_file = self.inimage.replace('.fits','_in.cat')
+            fullsextrcat = os.path.join(self.catpath,cat_file)
+            imgext = '[{}]'.format(self.sciext)
+            imgextint = int(self.sciext)
+            print('Running SEXtractor on the reference image: ',fullsextrcat)
+        elif imgtype == 'sub':
+            cat_file = fitsfile.replace('.fits','_ref.cat')
+            fullsextrcat = os.path.join(self.catpath,cat_file)
+            imgext = '[{}]'.format(self.templext)
+            imgextint = int(self.templext)
+            print('Running SEXtractor on the reference image: ',fullsextrcat)
+        elif imgtype == 'templ':
+            cat_file = fitsfile.replace('.fits','_sub.cat')
+            fullsextrcat = os.path.join(self.catpath,cat_file)
+            imgext = '[{}]'.format(self.subext)
+            imgextint = int(self.subext)
+            print('Running SEXtractor on the subtracted image: ',fullsextrcat)
         else:
-            self.fullinterp = self.fullref
-            # self.fullinterp = self.fullconv
-            if not os.path.isfile(self.fullinterpcat):
-                fileIO.sextractor_script(self.fullinterp+ref_ext, self.fullinterpcat, self.sfiles)
-            # ref_aligned_cat = fileIO.read_file(self.fullinterpcat)
-            ref_data,ref_hdr = fits.getdata(self.fullinterp,ext=int(self.templext),header=True)
-            ref_shape = ref_data.shape
-            del ref_data, ref_hdr
+            print("Please give imgtype name as 'sci', 'sub', or 'templ'.")
+
+        fileIO.sextractor_script(fitsfile+imgext, fullsextrcat, self.sfiles)
+        cat_data,cat_hdr = fits.getdata(fitsfile,ext=imgextint,header=True)
+
+        return fullsextrcat, cat_data
+
+        #This is if you already have your template image definied prior to running the script.
+        #FIX THIS!!!! DO NOT USE THE NAME FOR THE REFERENCE IMAGE
+        # Make Model PSF
+
+
+    def make_temp_sub_catalogs(self,inimage,catpath,outpath):
+
+        sub_ext = '[{}]'.format(self.subext)
+        print('Running SEXtractor on the subtracted image: ',self.fullsub)
+        fileIO.sextractor_script(self.fullsub+sub_ext, self.fullsubcat, self.sfiles)
+
+        print("Making the transient catalog from the subtracted image")
+        sub_data = fits.getdata(self.fullsub,ext=self.subext,header=False)
+        # sub_wcs     = wcs.WCS(sub_hdr)
+        zern_stats = {'MED':wf_s_coeff_med, 'MED_STD': wf_s_coeff_med_std}
+        self.make_transient_catalog(self.fullsubcat,sub_data,zern_stats)
+
+            # trans_list.append([x,y,snr,wf_s_z_dist,
+            #         mag_inst,mag_inst_err,ra,dec,flux,flux_err,mag_app,
+            #         mag_app_err,seeing])
 
         if self.del_tmp:
             os.remove(self.fullincat)
             os.remove(self.fullrefcat)
-
-        cat_filter = self.filter_catalog(self.fullinterpcat,ref_shape)
-
-        # if not ref_hdr[zpt_key]:
-        #     warnings.warn("""Please provide the ZP KEYWORD in the header.
-        #                     Else provide a calibration catalog""")
-
-        if self.subtract:
-            hp_args = self.chp
-            hp_args['sci'] = sci_ext
-            hp_args['tmpl'] = ref_ext
-            fileIO.run_hotpants(self.fullin,self.fullinterp,self.fullsub,self.fullconv,**hp_args)
-            fileIO.sextractor_script(self.fullconv,self.fullconvcat,self.sfiles)
-            fileIO.sextractor_script(self.fullsub,self.fullsubcat,self.sfiles)
-        else:
-            if not os.path.isfile(self.fullconvcat):
-                # fileIO.sextractor_script(self.fullinterp,self.fullconvcat,self.sfiles)
-                fileIO.sextractor_script(self.fullconv,self.fullconvcat,self.sfiles)
-            if not os.path.isfile(self.fullsubcat):
-                fileIO.sextractor_script(self.fullsub,self.fullsubcat,self.sfiles)
+            os.remove(self.fullsubcat)
 
 
-        # if not os.path.isfile(self.fullconvpsf):
-        conv_data = fits.getdata(self.fullinterp,ext=0)
-        print(self.fullinterp)
-        print("Making PSF in Convolved Image")
-        self.make_psf(self.fullconvcat,conv_data)
-        if self.plot_psf:
-            _ = self.plot_psf_array(self.fullconvcat,conv_data)
-        zern_stats = fileIO.read_zern_file(self.fullconvpsf)
-
-        sub_data,sub_hdr = fits.getdata(self.fullsub,ext=self.subext,header=True)
-        sub_wcs     = wcs.WCS(sub_hdr)
-
-        if not os.path.isfile(self.fulltrans):
-            print("Making the transient catalog from the subtracted image")
-            self.make_transient_catalog(self.fullsubcat,sub_data,zern_stats)
 
         # # initialise log
         # if log is None:
@@ -696,16 +528,12 @@ if __name__ == "__main__":
     ap.add_argument('-i', '--inimage', nargs='?', help="List of images", type=str)
     ap.add_argument('-r', '--refimage', nargs='?', help="List of reference images", type=str)
     ap.add_argument('-c', '--config', default=None, help="Configuration parameter file")
-    ap.add_argument('-ip', '--inpath', type=str, help='Path to image directory')
-    ap.add_argument('-op','--outpath', type=str,help='Output path')
-    ap.add_argument('-pp','--parampath', type=str,help='Parameters path')
-    ap.add_argument('-nt','--nthreads', default=1, type=int, help='Number of threads for multithreading (IO)')
+    ap.add_argument('-cp', '--catpath', type=str,help='Path to output SEXtractor catalog')
+    ap.add_argument('-nt', '--nthreads', default=1, type=int, help='Number of threads for multithreading (IO)')
     # ap.add_argument('-ncpu','--ncpus', default=1, type=int, help='Number of CPUs for multiprocessing (Computational)')
     ap.add_argument('-v', '--verbose', default=False, action='store_true', help='Increase verbosity')
     ap.add_argument('--del_tmp', default=False, action='store_true', help='Delete Temporary files')
-    ap.add_argument('--wcs_flag', default=True, action='store_true', help='Image Registration with WCS (default=True)')
-    ap.add_argument('--align',default=False, action='store_true', help='Alignment Flag (0 or 1)')
-    ap.add_argument('--subtract',default=False, help='Perform HOTPANTS subtraction (0 or 1)')
+    ap.add_argument('--make_trans',default=False, help='Make transient catalog from Subtracted Image using Model PSF Params from Reference Image (default=False)')
     ap.add_argument('--plot_psf',default=False, help='Return the median sigma-clipped PSF for plotting')
     args = vars(ap.parse_args())
     print('CALLING THE SCRIPT')
