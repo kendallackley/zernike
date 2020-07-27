@@ -49,7 +49,7 @@ class Shapelet:
         self.make_trans = make_trans
         self.plot_psf = plot_psf
         self.save_as_array = save_as_array
-        self.save_to_file = save_to_file
+        # self.save_to_file = save_to_file
 
         if isinstance(config,str):
             try:
