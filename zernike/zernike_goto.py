@@ -83,12 +83,13 @@ class Shapelet:
             if isinstance(inimage, str):
                 self.inimage = inimage
             # self.fullinimage = self.inimage+'[{}]'.format(self.sciext)
-            incat_file = self.inimage.replace('.fits','_in.cat')
-            self.fullincat = os.path.join(self.catpath,incat_file)
 
             if isinstance(catpath, str):
                 self.catpath = catpath
                 os.makedirs(self.catpath,exist_ok=True)
+
+            incat_file = self.inimage.replace('.fits','_in.cat')
+            self.fullincat = os.path.join(self.catpath,incat_file)
 
             if isinstance(outpath, str):
                 self.outpath = outpath
@@ -479,27 +480,6 @@ class Shapelet:
         #FIX THIS!!!! DO NOT USE THE NAME FOR THE REFERENCE IMAGE
         # Make Model PSF
 
-
-    def make_temp_sub_catalogs(self,inimage,catpath,outpath):
-
-        sub_ext = '[{}]'.format(self.subext)
-        print('Running SEXtractor on the subtracted image: ',self.fullsub)
-        fileIO.sextractor_script(self.fullsub+sub_ext, self.fullsubcat, self.sfiles)
-
-        print("Making the transient catalog from the subtracted image")
-        sub_data = fits.getdata(self.fullsub,ext=self.subext,header=False)
-        # sub_wcs     = wcs.WCS(sub_hdr)
-        zern_stats = {'MED':wf_s_coeff_med, 'MED_STD': wf_s_coeff_med_std}
-        self.make_transient_catalog(self.fullsubcat,sub_data,zern_stats)
-
-            # trans_list.append([x,y,snr,wf_s_z_dist,
-            #         mag_inst,mag_inst_err,ra,dec,flux,flux_err,mag_app,
-            #         mag_app_err,seeing])
-
-        if self.del_tmp:
-            os.remove(self.fullincat)
-            os.remove(self.fullrefcat)
-            os.remove(self.fullsubcat)
 
 
 
