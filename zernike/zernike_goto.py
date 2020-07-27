@@ -207,9 +207,11 @@ class Shapelet:
         del(cat_filter)
         ## TODO: Add SATURATION FLAG
         catflux = cat_filter2.to_pandas()[flux_key]
-        catflux_clip = sigma_clip(catflux, sigma=3, maxiters=3)
-        self.flux_max = catflux_clip.quantile(0.95)
-        self.flux_min = catflux_clip.quantile(0.05)
+        catflux_clip = sigma_clip(catflux, sigma=3, maxiters=3,masked=False)
+        self.flux_max = np.quantile(catflux_clip,0.95)
+        self.flux_min = np.quantile(catflux_clip,0.05)
+        # self.flux_max = catflux_clip.quantile(0.95)
+        # self.flux_min = catflux_clip.quantile(0.05)
         del catflux, catflux_clip
         print('FLUX MAX AND MIN',self.flux_max,self.flux_min)
         cat_filter3 = misc.filter_cat_flux(cat_filter2,self.flux_min,self.flux_max)
