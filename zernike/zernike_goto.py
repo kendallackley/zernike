@@ -347,8 +347,8 @@ class Shapelet:
                 psf_wf_tile[m,n]     = wf_avg/wf_avg.sum()
                 print(m,n,len(wf_list_tile[m][n]))
 
-        tile_ref_name = outpath+os.path.splitext(cat_file)[0]+'_ref_tile.png'
-        tile_name = outpath+os.path.splitext(cat_file)[0]+'_ref.png'
+        tile_ref_name = self.outpath+os.path.splitext(cat_file)[0]+'_ref_tile.png'
+        tile_name = self.outpath+os.path.splitext(cat_file)[0]+'_ref.png'
 
         psf_inj = np.array(psf_wf_tile,copy=True)
 
