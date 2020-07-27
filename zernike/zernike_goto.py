@@ -445,7 +445,7 @@ class Shapelet:
             self.outpath = outpath
             os.makedirs(self.outpath,exist_ok=True)
 
-        fitsfile = inimage.copy()
+        fitsfile = inimage
         self.fullcat = fitsfile
 
         if imgtype == 'sci':
