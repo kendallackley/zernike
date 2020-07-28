@@ -303,7 +303,7 @@ class Shapelet:
             #TODO  Import and run tiling script
             len_wf_s_coeff_list = len(wf_s_coeff_list)
             len_cat_filter = len(cat_filter)
-            return len_wf_s_coeff_list, wf_s_coeff_med,wf_s_coeff_med_std
+            return len_wf_s_coeff_list, wf_s_coeff_med,wf_s_coeff_med_std, cat_filter
             # fileIO.write_psf_file(self.fullconvpsf,self.fullinterp,self.fullconvcat,
             #     wf_s_coeff_mean,wf_s_coeff_med,wf_s_coeff_gauss,self.flux_min,self.cls_min,
             #     self.nzmax,self.sub_dim, self.disk_dim,self.disk_rad,len_wf_s_coeff_list,
@@ -312,7 +312,7 @@ class Shapelet:
             # return
 
 
-    def plot_psf_array(self,cat_file,img_data,ext=0,**kwargs):
+    def plot_psf_array(self,cat_filter,cat_file,img_data,ext=0,**kwargs):
 
         try:
             x_key = kwargs['x_key']
@@ -321,7 +321,7 @@ class Shapelet:
             x_key = 'XWIN_IMAGE'
             y_key = 'YWIN_IMAGE'
 
-        cat_filter = self.filter_catalog(cat_file,img_data.shape)
+        # cat_filter = self.filter_catalog(cat_file,img_data.shape)
 
         sep_val = np.linspace(-.5,.5,4)
         cent_val = np.array([(sep_val[i]+sep_val[i+1])/2.0 for i in range(len(sep_val)-1)])
