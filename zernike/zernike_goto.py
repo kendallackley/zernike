@@ -457,7 +457,7 @@ class Shapelet:
             fullsextrcat = os.path.join(self.catpath,cat_file)
             imgext = '[{}]'.format(self.sciext)
             imgextint = int(self.sciext)
-            print('Running SEXtractor on the reference image: ',fullsextrcat)
+            print('Running SEXtractor on the science image: ',fullsextrcat)
         elif imgtype == 'sub':
             cat_file = fitsfile.replace('.fits','_ref.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
