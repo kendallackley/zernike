@@ -475,7 +475,7 @@ class Shapelet:
             print("Please give imgtype name as 'sci', 'sub', or 'templ'.")
 
         fileIO.sextractor_script(fitsfile+'['+imgext+']', fullsextrcat, self.sfiles)
-        cat_data = fits.getdata(fitsfile,imgext,header=True)
+        cat_data = fits.getdata(fitsfile,imgext,header=False)
 
         return fullsextrcat, cat_data
 
