@@ -462,13 +462,13 @@ class Shapelet:
             imgext = '[{}]'.format(self.sciext)
             imgextint = int(self.sciext)
             print('Running SEXtractor on the SCIENCE image: ',fullsextrcat)
-        elif imgtype == 'sub':
+        elif imgtype == 'templ':
             cat_file = fitsfile.replace('.fits','_ref.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
             imgext = '[{}]'.format(self.templext)
             imgextint = int(self.templext)
             print('Running SEXtractor on the REFERENCE image: ',fullsextrcat)
-        elif imgtype == 'templ':
+        elif imgtype == 'sub':
             cat_file = fitsfile.replace('.fits','_sub.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
             imgext = '[{}]'.format(self.subext)
