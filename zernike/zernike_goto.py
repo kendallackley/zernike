@@ -459,26 +459,23 @@ class Shapelet:
                 self.inimage = inimage
             cat_file = self.inimage.replace('.fits','_in.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
-            imgext = '[{}]'.format(self.sciext)
-            imgextint = int(self.sciext)
+            imgext = 'IMAGE'
             print('Running SEXtractor on the SCIENCE image: ',fullsextrcat)
         elif imgtype == 'templ':
             cat_file = fitsfile.replace('.fits','_ref.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
-            imgext = '[{}]'.format(self.templext)
-            imgextint = int(self.templext)
+            imgext = 'TEMPLATE'
             print('Running SEXtractor on the REFERENCE image: ',fullsextrcat)
         elif imgtype == 'sub':
             cat_file = fitsfile.replace('.fits','_sub.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
-            imgext = '[{}]'.format(self.subext)
-            imgextint = int(self.subext)
+            imgext = 'DIFFERENCE'
             print('Running SEXtractor on the SUBTRACTED image: ',fullsextrcat)
         else:
             print("Please give imgtype name as 'sci', 'sub', or 'templ'.")
 
-        fileIO.sextractor_script(fitsfile+imgext, fullsextrcat, self.sfiles)
-        cat_data,cat_hdr = fits.getdata(fitsfile,ext=imgextint,header=True)
+        fileIO.sextractor_script(fitsfile+'['+imgext+']', fullsextrcat, self.sfiles)
+        cat_data = fits.getdata(fitsfile,imgext,header=True)
 
         return fullsextrcat, cat_data
 
