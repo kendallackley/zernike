@@ -385,11 +385,15 @@ class Shapelet:
             y_key = kwargs['y_key']
             flux_key = kwargs['flux_key']
             fluxerr_key =kwargs['fluxerr_key']
+            mag_key = kwargs['mag_key']
+            magerr_key =kwargs['magerr_key']
         except:
             x_key = 'XWIN_IMAGE'
             y_key = 'YWIN_IMAGE'
             flux_key = 'FLUX_AUTO'
             fluxerr_key ='FLUXERR_AUTO'
+            mag_key = 'MAG_AUTO'
+            magerr_key ='MAGERR_AUTO'
 
         cat     = fileIO.read_file(cat_file)
         cat_filter  = misc.filter_cat_xy(cat,img_data.shape,self.sub_dim)
@@ -457,19 +461,19 @@ class Shapelet:
             fullsextrcat = os.path.join(self.catpath,cat_file)
             imgext = '[{}]'.format(self.sciext)
             imgextint = int(self.sciext)
-            print('Running SEXtractor on the science image: ',fullsextrcat)
+            print('Running SEXtractor on the SCIENCE image: ',fullsextrcat)
         elif imgtype == 'sub':
             cat_file = fitsfile.replace('.fits','_ref.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
             imgext = '[{}]'.format(self.templext)
             imgextint = int(self.templext)
-            print('Running SEXtractor on the reference image: ',fullsextrcat)
+            print('Running SEXtractor on the REFERENCE image: ',fullsextrcat)
         elif imgtype == 'templ':
             cat_file = fitsfile.replace('.fits','_sub.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
             imgext = '[{}]'.format(self.subext)
             imgextint = int(self.subext)
-            print('Running SEXtractor on the subtracted image: ',fullsextrcat)
+            print('Running SEXtractor on the SUBTRACTED image: ',fullsextrcat)
         else:
             print("Please give imgtype name as 'sci', 'sub', or 'templ'.")
 
