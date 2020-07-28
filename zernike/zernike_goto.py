@@ -337,7 +337,7 @@ class Shapelet:
         psf_wf_tile=np.zeros((3,3,self.disk_dim,self.disk_dim))
         for m in range(0,3):
             for n in range(0,3):
-                wf_clip = sigma_clip(wf_list_tile[m][n], sigma=3, maxiters=3)
+                wf_clip = wf_list_tile[m][n] #sigma_clip(wf_list_tile[m][n], sigma=3, maxiters=3)
                 wf_weights      = [1/np.var(wf_item) if np.var(wf_item) else 1 for wf_item in wf_clip ]
                 try:
                     wf_avg         = np.average(wf_clip,axis=0,weights=wf_weights)*disk_mask
