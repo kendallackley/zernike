@@ -388,7 +388,7 @@ class Shapelet:
         f, ax = plt.subplots(1,1)
         ax.set_title(os.path.basename(cat_file))
         cax = ax.hist(zdist_hist,bins=np.logspace(np.log10(1.0), np.log10(5000.0), 500))
-        cax.set_xlabel('Zernike Distance')
+        ax.set_xlabel('Zernike Distance')
         ax.set_xscale('log')
         plt.savefig(hist_name)
         plt.close()
