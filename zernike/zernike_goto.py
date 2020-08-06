@@ -378,6 +378,23 @@ class Shapelet:
 
         return tile_ref_name, tile_name
 
+    def plot_zdist_hist(self,cat_file,zdist_data):
+
+        hist_name = os.path.splitext(cat_file)[0]+'_hist.png'
+
+        zdist_hist = np.array(zdist_data,copy=True)
+        del zdist_data
+
+        f, ax = plt.subplots(1,1)
+        ax.set_title(os.path.basename(cat_file))
+        cax = ax.hist(zdist_hist,bins=np.logspace(np.log10(1.0), np.log10(5000.0), 500))
+        cax.set_xlabel('Zernike Distance')
+        ax.set_xscale('log')
+        plt.savefig(hist_name)
+        plt.close()
+
+        return hist_name
+
     def make_transient_catalog(self,cat_file,img_data,zern_stats,*kwargs):
 
         try:
