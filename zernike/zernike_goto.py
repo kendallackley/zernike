@@ -24,6 +24,7 @@ from configobj import ConfigObj
 from astropy.table import Column
 import sys
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import AxesGrid
 
 import warnings
 
@@ -312,7 +313,7 @@ class Shapelet:
             # return
 
 
-    def plot_psf_array(self,cat_filter,cat_file,img_data,ext=0,**kwargs):
+    def plot_psf_array(self,cat_filter,cat_file,img_data,imgtype,ext=0,**kwargs):
 
         try:
             x_key = kwargs['x_key']
@@ -347,36 +348,52 @@ class Shapelet:
                 psf_wf_tile[m,n]     = wf_avg/wf_avg.sum()
                 print(m,n,len(wf_list_tile[m][n]))
 
-        tile_ref_name = os.path.splitext(cat_file)[0]+'_ref_tile.png'
-        tile_name = os.path.splitext(cat_file)[0]+'_ref.png'
-
         psf_inj = np.array(psf_wf_tile,copy=True)
 
-        f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3,3)
+        if imgtype == 'sci':
+            psf_tile_name = os.path.splitext(cat_file)[0]+'_psf_tile.png'
+            psf_name = os.path.splitext(cat_file)[0]+'_psf.png'
+        elif imgtype == 'templ':
+            psf_tile_name = os.path.splitext(cat_file)[0]+'_psf_tile.png'
+            psf_name = os.path.splitext(cat_file)[0]+'_psf.png'
 
-        ax2.set_title(os.path.basename(cat_file))
-        ax1.imshow(psf_inj[0][0])
-        ax2.imshow(psf_inj[0][1])
-        ax3.imshow(psf_inj[0][2])
-        ax4.imshow(psf_inj[1][0])
-        ax5.imshow(psf_inj[1][1])
-        ax6.imshow(psf_inj[1][2])
-        ax7.imshow(psf_inj[2][0])
-        ax8.imshow(psf_inj[2][1])
-        cax = ax9.imshow(psf_inj[2][2])
-        f.colorbar(cax)
-    #    plt.show()
-        plt.savefig(tile_ref_name)
+        fig=plt.figure()
+        grid = AxesGrid(fig, 111,nrows_ncols=(3,3),
+                    axes_pad = 0.05,
+                    share_all=True,
+                    label_mode = "L",
+                    cbar_location = "right",
+                    cbar_mode="single",
+                    cbar_size='4%'
+                    )
+
+        im = grid[0].imshow(psf_inj[0][0])
+        grid.cbar_axes[0].colorbar(im)
+        im = grid[1].imshow(psf_inj[0][1])
+        im = grid[2].imshow(psf_inj[0][2])
+        im = grid[3].imshow(psf_inj[1][0])
+        im = grid[4].imshow(psf_inj[1][1])
+        im = grid[5].imshow(psf_inj[1][2])
+        im = grid[6].imshow(psf_inj[2][0])
+        im = grid[7].imshow(psf_inj[2][1])
+        im = grid[8].imshow(psf_inj[2][2])
+
+        grid.axes_llc.set_xticks([])
+        grid.axes_llc.set_yticks([])
+
+        plt.margins(0,0)
+        plt.savefig(psf_tile_name,bbox_inches = 'tight',pad_inches = 0.1)
         plt.close()
 
         f, ax = plt.subplots(1,1)
         ax.set_title(os.path.basename(cat_file))
         cax = ax.imshow(psf_inj[1][1])
-        f.colorbar(cax)
-        plt.savefig(tile_name)
+        f.colorbar(cax, pad=0.01)
+        plt.axis('off')
+        plt.savefig(psf_name,bbox_inches = 'tight',pad_inches = 0.1)
         plt.close()
 
-        return tile_ref_name, tile_name
+        return psf_tile_name, psf_name
 
     def plot_zdist_hist(self,cat_file,zdist_data):
 
@@ -386,11 +403,11 @@ class Shapelet:
         del zdist_data
 
         f, ax = plt.subplots(1,1)
-        ax.set_title(os.path.basename(cat_file))
+        # ax.set_title(os.path.basename(cat_file))
         cax = ax.hist(zdist_hist,bins=np.logspace(np.log10(1.0), np.log10(5000.0), 500))
         ax.set_xlabel('Zernike Distance')
         ax.set_xscale('log')
-        plt.savefig(hist_name)
+        plt.savefig(hist_name,bbox_inches = 'tight',pad_inches = 0.1)
         plt.close()
 
         return hist_name
