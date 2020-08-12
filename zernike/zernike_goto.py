@@ -386,9 +386,9 @@ class Shapelet:
         plt.close()
 
         f, ax = plt.subplots(1,1)
-        ax.set_title(os.path.basename(cat_file))
+        # ax.set_title(os.path.basename(cat_file))
         cax = ax.imshow(psf_inj[1][1])
-        f.colorbar(cax, pad=0.01)
+        # f.colorbar(cax, pad=0.01)
         plt.axis('off')
         plt.savefig(psf_name,bbox_inches = 'tight',pad_inches = 0.1)
         plt.close()
