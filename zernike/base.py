@@ -122,7 +122,7 @@ class FileIO():
 
 
         args = [cmd+' '+infile+' '.join(sargs)]
-        print(args)
+        # print(args)
         subprocess.call(args,shell=True)
         return
 

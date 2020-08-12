@@ -475,7 +475,7 @@ class Shapelet:
     def make_temp_catalogs(self,inimage,catpath,outpath,imgtype):
 
         self.sfiles = '/export/gotodata1/ackley/github/zernike/zernike/param/goto.sex'
-        print('SEXTRACTOR FILE: ',self.sfiles)
+        # print('SEXTRACTOR FILE: ',self.sfiles)
 
         if isinstance(catpath, str):
             self.catpath = catpath
