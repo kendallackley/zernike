@@ -351,11 +351,15 @@ class Shapelet:
         psf_inj = np.array(psf_wf_tile,copy=True)
 
         if imgtype == 'sci':
+            print(cat_file)
             psf_tile_name = os.path.splitext(cat_file)[0]+'_psf_tile.png'
             psf_name = os.path.splitext(cat_file)[0]+'_psf.png'
+            print(psf_name)
         elif imgtype == 'templ':
+            print(cat_file)
             psf_tile_name = os.path.splitext(cat_file)[0]+'_psf_tile.png'
             psf_name = os.path.splitext(cat_file)[0]+'_psf.png'
+            print(psf_name)
 
         fig=plt.figure()
         grid = AxesGrid(fig, 111,nrows_ncols=(3,3),
@@ -387,7 +391,7 @@ class Shapelet:
 
         f, ax = plt.subplots(1,1)
         # ax.set_title(os.path.basename(cat_file))
-        cax = ax.imshow(psf_inj[1][1])
+        ax.imshow(psf_inj[1][1])
         # f.colorbar(cax, pad=0.01)
         plt.axis('off')
         plt.savefig(psf_name,bbox_inches = 'tight',pad_inches = 0.1)
@@ -493,17 +497,17 @@ class Shapelet:
                 self.inimage = inimage
             cat_file = self.inimage.replace('.fits','_in.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
-            imgext = 'IMAGE'
+            imgext = '0' #'IMAGE'
             print('Running SEXtractor on the SCIENCE image: ',fullsextrcat)
         elif imgtype == 'templ':
             cat_file = fitsfile.replace('.fits','_ref.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
-            imgext = 'TEMPLATE'
+            imgext = '7' #'TEMPLATE'
             print('Running SEXtractor on the REFERENCE image: ',fullsextrcat)
         elif imgtype == 'sub':
             cat_file = fitsfile.replace('.fits','_sub.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
-            imgext = 'DIFFERENCE'
+            imgext = '6' #'DIFFERENCE'
             print('Running SEXtractor on the SUBTRACTED image: ',fullsextrcat)
         else:
             print("Please give imgtype name as 'sci', 'sub', or 'templ'.")
