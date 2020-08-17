@@ -514,11 +514,15 @@ class Shapelet:
             print('Running SEXtractor on the SUBTRACTED image: ',fullsextrcat)
         else:
             print("Please give imgtype name as 'sci', 'sub', or 'templ'.")
+        try:
+            fits.getdata(fitsfile,fitsext,header=False)
+            fileIO.sextractor_script(fitsfile+'['+imgext+']', fullsextrcat, self.sfiles)
+            cat_data = fits.getdata(fitsfile,fitsext,header=False)
+            return fullsextrcat, cat_data
+        except KeyError:
+            return fullsextrcat, None
 
-        fileIO.sextractor_script(fitsfile+'['+imgext+']', fullsextrcat, self.sfiles)
-        cat_data = fits.getdata(fitsfile,fitsext,header=False)
 
-        return fullsextrcat, cat_data
 
         #This is if you already have your template image definied prior to running the script.
         #FIX THIS!!!! DO NOT USE THE NAME FOR THE REFERENCE IMAGE
