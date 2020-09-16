@@ -246,70 +246,73 @@ class Shapelet:
         cat_filter = self.filter_catalog(cat_file,img_data.shape)
         print(cat_file)
         wf_s_coeff_list = []
-        for cat_num, cat_item in enumerate(cat_filter):
-            x           = cat_item[x_key]
-            y           = cat_item[y_key]
-            x_int       = int(round(x))
-            y_int       = int(round(y))
-            dx          = x-x_int
-            dy          = y-y_int
+        if len(cat_filter):
+            for cat_num, cat_item in enumerate(cat_filter):
+                x           = cat_item[x_key]
+                y           = cat_item[y_key]
+                x_int       = int(round(x))
+                y_int       = int(round(y))
+                dx          = x-x_int
+                dy          = y-y_int
 
-                # psfs.append(impsf.img2wf_lanczos3(img_data,x,y,self.sub_dim,disk_mask))
-            # wf_s_img    = impsf.img2wf_lanczos3(img_data,x,y,self.sub_dim,disk_mask)
-            sub_img     = impsf.sub_image(img_data,x_int,y_int,self.sub_dim)
-            sub_img     = impsf.remove_background(sub_img)
-            sub_img_s   = impsf.shift_image(sub_img,dx,dy,5)
-            wf_s_img    = impsf.calc_wavefront(sub_img_s,disk_mask)
-            if not isinstance(wf_s_img,str):  #???????
-                wf_s_coeff  = zern_poly.zern_fit(wf_s_img,zern_list,cov_mat_inv)
-                wf_s_rec    = zern_poly.wf_comp_brief(wf_s_coeff,zern_list)
-                wf_s_err    = zern_poly.calc_wf_error(wf_s_img,wf_s_rec,disk_mask)
-                if wf_s_err < .01:
-                    wf_s_coeff_list.append(wf_s_coeff)
+                    # psfs.append(impsf.img2wf_lanczos3(img_data,x,y,self.sub_dim,disk_mask))
+                # wf_s_img    = impsf.img2wf_lanczos3(img_data,x,y,self.sub_dim,disk_mask)
+                sub_img     = impsf.sub_image(img_data,x_int,y_int,self.sub_dim)
+                sub_img     = impsf.remove_background(sub_img)
+                sub_img_s   = impsf.shift_image(sub_img,dx,dy,5)
+                wf_s_img    = impsf.calc_wavefront(sub_img_s,disk_mask)
+                if not isinstance(wf_s_img,str):  #???????
+                    wf_s_coeff  = zern_poly.zern_fit(wf_s_img,zern_list,cov_mat_inv)
+                    wf_s_rec    = zern_poly.wf_comp_brief(wf_s_coeff,zern_list)
+                    wf_s_err    = zern_poly.calc_wf_error(wf_s_img,wf_s_rec,disk_mask)
+                    if wf_s_err < .01:
+                        wf_s_coeff_list.append(wf_s_coeff)
 
+                else:
+                    print(" A wf_s_coeff_list wasn't created")
+                    print(wf_s_img)
+                    continue
+            print('{} sources found for calculating the model PSF'.format(len(wf_s_coeff_list)))
+            if not len(wf_s_coeff_list) > 1:
+                #exit
+                warnings.warn("""
+                Could not write output PSF file. Filtering of sources is too strict.
+                """)
             else:
-                print(" A wf_s_coeff_list wasn't created")
-                print(wf_s_img)
-                continue
-        print('{} sources found for calculating the model PSF'.format(len(wf_s_coeff_list)))
-        if not len(wf_s_coeff_list) > 1:
-            #exit
-            warnings.warn("""
-            Could not write output PSF file. Filtering of sources is too strict.
-            """)
-        else:
-            wf_s_coeff_list     = np.array(wf_s_coeff_list)
-            # Calculate mean, median, and stds of coefficients for all sources
-            wf_s_coeff_mean     = np.mean(wf_s_coeff_list,axis=0)
-            wf_s_coeff_mean_std = np.std(wf_s_coeff_list,axis=0)
-            wf_s_coeff_med      = np.median(wf_s_coeff_list,axis=0)
-            wf_s_coeff_med_std  = np.zeros(len(wf_s_coeff_med))
+                wf_s_coeff_list     = np.array(wf_s_coeff_list)
+                # Calculate mean, median, and stds of coefficients for all sources
+                wf_s_coeff_mean     = np.mean(wf_s_coeff_list,axis=0)
+                wf_s_coeff_mean_std = np.std(wf_s_coeff_list,axis=0)
+                wf_s_coeff_med      = np.median(wf_s_coeff_list,axis=0)
+                wf_s_coeff_med_std  = np.zeros(len(wf_s_coeff_med))
 
-            for k in range(len(wf_s_coeff_med)):
-                for l in range(len(wf_s_coeff_list)):
-                    wf_s_coeff_med_std[k] += (wf_s_coeff_list[l][k]-wf_s_coeff_med[k])**2
-                wf_s_coeff_med_std[k]    = np.sqrt(wf_s_coeff_med_std[k])
-            n_bins      =   int(np.floor(10*np.log10(len(wf_s_coeff_list))))
-            try:
-                gfit_res                = misc.gfit_zerndist(wf_s_coeff_list,n_bins)
-                wf_s_coeff_gauss        = np.array(gfit_res[0])
-                wf_s_coeff_gauss_std    = np.array(gfit_res[1])
-                wf_s_coeff_gauss_chi2   = np.array(gfit_res[2])
-            except RuntimeError:
-                print('RunTimeError encountered when calculating Gaussian Fits')
-                wf_s_coeff_gauss        = np.array([-99.0]*self.nzmax)
-                wf_s_coeff_gauss_std    = np.array([-99.0]*self.nzmax)
-                wf_s_coeff_gauss_chi2   = np.array([-99.0]*self.nzmax)
-                pass
-            #TODO  Import and run tiling script
-            len_wf_s_coeff_list = len(wf_s_coeff_list)
-            len_cat_filter = len(cat_filter)
-            return len_wf_s_coeff_list, wf_s_coeff_med,wf_s_coeff_med_std, cat_filter
+                for k in range(len(wf_s_coeff_med)):
+                    for l in range(len(wf_s_coeff_list)):
+                        wf_s_coeff_med_std[k] += (wf_s_coeff_list[l][k]-wf_s_coeff_med[k])**2
+                    wf_s_coeff_med_std[k]    = np.sqrt(wf_s_coeff_med_std[k])
+                n_bins      =   int(np.floor(10*np.log10(len(wf_s_coeff_list))))
+                try:
+                    gfit_res                = misc.gfit_zerndist(wf_s_coeff_list,n_bins)
+                    wf_s_coeff_gauss        = np.array(gfit_res[0])
+                    wf_s_coeff_gauss_std    = np.array(gfit_res[1])
+                    wf_s_coeff_gauss_chi2   = np.array(gfit_res[2])
+                except RuntimeError:
+                    print('RunTimeError encountered when calculating Gaussian Fits')
+                    wf_s_coeff_gauss        = np.array([-99.0]*self.nzmax)
+                    wf_s_coeff_gauss_std    = np.array([-99.0]*self.nzmax)
+                    wf_s_coeff_gauss_chi2   = np.array([-99.0]*self.nzmax)
+                    pass
+                #TODO  Import and run tiling script
+                len_wf_s_coeff_list = len(wf_s_coeff_list)
+                len_cat_filter = len(cat_filter)
+                return len_wf_s_coeff_list, wf_s_coeff_med,wf_s_coeff_med_std, cat_filter
             # fileIO.write_psf_file(self.fullconvpsf,self.fullinterp,self.fullconvcat,
             #     wf_s_coeff_mean,wf_s_coeff_med,wf_s_coeff_gauss,self.flux_min,self.cls_min,
             #     self.nzmax,self.sub_dim, self.disk_dim,self.disk_rad,len_wf_s_coeff_list,
             #     len_cat_filter,wf_s_coeff_gauss_std,wf_s_coeff_gauss_chi2,
             #     wf_s_coeff_mean_std,wf_s_coeff_med_std)
+        else:
+            return None, None, None, None
             # return
 
 
