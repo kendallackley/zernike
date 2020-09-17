@@ -501,7 +501,7 @@ class Shapelet:
             cat_file = self.inimage.replace('.fits','_in.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
             fitsext = 'IMAGE'
-            print('Running SEXtractor on the SCIENCE image: ',fullsextrcat)
+            print('Running SEXtractor on the SCIENCE image: ',fullsextrcat,'DOES THIS SHOW UP?')
         elif imgtype == 'templ':
             cat_file = fitsfile.replace('.fits','_ref.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
