@@ -494,6 +494,7 @@ class Shapelet:
 
         fitsfile = inimage
         self.fullcat = fitsfile
+        print('DOES THIS SHOW UP?')
 
         if imgtype == 'sci':
             if isinstance(inimage, str):
