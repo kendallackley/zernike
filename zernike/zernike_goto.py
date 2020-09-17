@@ -518,6 +518,8 @@ class Shapelet:
             fits.getdata(fitsfile,fitsext,header=False)
             with fits.open(fitsfile) as hdul:
                 imgext = str(hdul.index_of(fitsext))
+                print('FITSEXTENSION:',fitsfile,fitsext,imgext)
+
             fileIO.sextractor_script(fitsfile+'['+imgext+']', fullsextrcat, self.sfiles)
             cat_data = fits.getdata(fitsfile,fitsext,header=False)
             return fullsextrcat, cat_data
