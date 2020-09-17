@@ -494,7 +494,6 @@ class Shapelet:
 
         fitsfile = inimage
         self.fullcat = fitsfile
-        print('DOES THIS SHOW UP?')
 
         if imgtype == 'sci':
             if isinstance(inimage, str):
@@ -502,12 +501,12 @@ class Shapelet:
             cat_file = self.inimage.replace('.fits','_in.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
             fitsext = 'IMAGE'
-            print('Running SEXtractor on the SCIENCE image: ',fullsextrcat,'DOES THIS SHOW UP?')
+            print('Running SEXtractor on the SCIENCE image: ',fullsextrcat)
         elif imgtype == 'templ':
             cat_file = fitsfile.replace('.fits','_ref.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
             fitsext = 'TEMPLATE'
-            print('Running SEXtractor on the REFERENCE image: ',fullsextrcat,fitsext,'DOES THIS SHOW UP?')
+            print('Running SEXtractor on the REFERENCE image: ',fullsextrcat)
         elif imgtype == 'sub':
             cat_file = fitsfile.replace('.fits','_sub.cat')
             fullsextrcat = os.path.join(self.catpath,cat_file)
@@ -519,8 +518,6 @@ class Shapelet:
             fits.getdata(fitsfile,fitsext,header=False)
             with fits.open(fitsfile) as hdul:
                 imgext = str(hdul.index_of(fitsext))
-                print('FITSEXTENSION:',fitsfile,fitsext,imgext)
-
             fileIO.sextractor_script(fitsfile+'['+imgext+']', fullsextrcat, self.sfiles)
             cat_data = fits.getdata(fitsfile,fitsext,header=False)
             return fullsextrcat, cat_data
