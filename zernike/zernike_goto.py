@@ -278,6 +278,7 @@ class Shapelet:
                 warnings.warn("""
                 Could not write output PSF file. Filtering of sources is too strict.
                 """)
+                return None, None, None, None
             else:
                 wf_s_coeff_list     = np.array(wf_s_coeff_list)
                 # Calculate mean, median, and stds of coefficients for all sources
