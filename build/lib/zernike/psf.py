@@ -6,7 +6,7 @@ from astropy.table import Table
 from scipy.special import factorial as fac
 
 from . import base
-
+#import base
 __all__ = ["zernike"]
 
 
@@ -440,7 +440,7 @@ class Catalog():
 
     def calc_zdist_med_std(self,zz,ref_zz):
         import numpy as np
-        return np.sqrt(np.sum([((zz[i]-ref_zz['MED'][i])/ref_zz['MEAN_STD'][i])**2 for i in range(len(zz))]))
+        return np.sqrt(np.sum([((zz[i]-ref_zz['MED'][i])/ref_zz['MED_STD'][i])**2 for i in range(len(zz))]))
 
     def gfit_zerndist(self,zc_lst,n_bins):
         import numpy as np

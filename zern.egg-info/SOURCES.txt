@@ -1,3 +1,5 @@
+COPYING
+LICENSE
 README.md
 setup.py
 zern.egg-info/PKG-INFO
@@ -10,3 +12,4 @@ zernike/psf.py
 zernike/test_conda.py
 zernike/version.py
 zernike/zernike.py
+zernike/zernike_goto.py

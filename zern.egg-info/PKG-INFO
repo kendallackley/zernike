@@ -1,4 +1,4 @@
-Metadata-Version: 1.2
+Metadata-Version: 2.1
 Name: zern
 Version: 0.1.0
 Summary: Zernike Shapelet analysis
@@ -6,7 +6,6 @@ Home-page: http://github.com/kendallackley/zernike
 Author: Kendall Ackley
 Author-email: kendall.ackley@monash.edu
 License: MIT
-Description: UNKNOWN
 Platform: UNKNOWN
 Classifier: Intended Audience :: Science/Research
 Classifier: License :: OSI Approved :: MIT License
@@ -17,3 +16,8 @@ Classifier: Programming Language :: Python :: 3.7
 Classifier: Topic :: Scientific/Engineering :: Astronomy
 Classifier: Topic :: Scientific/Engineering :: Physics
 Requires-Python: >=3.6.0
+License-File: LICENSE
+License-File: COPYING
+
+UNKNOWN
+
